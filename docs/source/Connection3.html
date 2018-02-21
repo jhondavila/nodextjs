@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-database-postgre-Connection'>/**
+</span> * 
+ */
+Nodext.define(&quot;Nodext.database.postgre.Connection&quot;, {
+    extend: &quot;Nodext.database.Connection&quot;,
+    alias: &quot;dbconnection.postgre&quot;,
+<span id='Nodext-database-postgre-Connection-cfg-dbdriver'>    dbdriver: &quot;postgre&quot;,
+</span><span id='Nodext-database-postgre-Connection-property-driver'>    driver: null,
+</span>    config: {
+<span id='Nodext-database-postgre-Connection-cfg-strCon'>        /**
+</span>        * Cadena de conexion
+        */
+        strCon: &quot;&quot;,
+<span id='Nodext-database-postgre-Connection-cfg-singlePool'>        singlePool: null
+</span>    },
+<span id='Nodext-database-postgre-Connection-method-constructor'>    constructor: function () {
+</span>        this.callParent(arguments);
+        this.driver = require(&quot;pg&quot;);
+        this.generateStringConnection();
+        if (this.type === &quot;pool&quot;) {
+            this.singlePool = new this.driver.Pool({
+                connectionString: this.strCon
+            })
+            this.newCnx = this.newPoolCnx;
+        } else {
+            this.newCnx = this.newClientCnx;
+        }
+        Nodext.db.Manager.addListCnx(this.nameConnection || this.database, this);
+        this.qb = this.qb || {};
+        if (!(this.qb instanceof Nodext.database.query.Builder)) {
+            Nodext.apply(this.qb, {
+                type: this.dbdriver
+            });
+            this.qb = Nodext.database.query.Builder.create(this.qb);
+        }
+    },
+<span id='Nodext-database-postgre-Connection-method-generateStringConnection'>    generateStringConnection: function () {
+</span>        this.strCon = Ext.String.format(&quot;postgres://{0}:{1}@{2}/{3}&quot;, this.username, this.password, this.hostname, this.database);
+    },
+<span id='Nodext-database-postgre-Connection-method-newPoolCnx'>    newPoolCnx: function () {
+</span>        return Nodext.create(&quot;Nodext.database.postgre.Pool&quot;, {
+            cnx: this.singlePool,
+            strCon: this.strCon,
+            connection: this
+        });
+    },
+<span id='Nodext-database-postgre-Connection-method-newClientCnx'>    newClientCnx: function () {
+</span>        return Nodext.create(&quot;Nodext.database.postgre.Client&quot;, {
+            connection: this,
+            cnx: this.newClientInst()
+        });
+    },
+<span id='Nodext-database-postgre-Connection-method-newClientInst'>    newClientInst: function () {
+</span>        return new this.driver.Client(this.strCon);
+    },
+<span id='Nodext-database-postgre-Connection-method-sendQueryError'>    sendQueryError: function (inst, query, err) {
+</span>
+        var message = this.getMessageError(err) || {};
+        var data = {
+            success: false,
+            message: message.text || &quot;Database Query Error&quot;,
+        };
+
+        if (this.debug) {
+            data[&quot;query&quot;] = query;
+            data[&quot;error&quot;] = err;
+        }
+        inst.sendError(data, 500, true);
+    },
+<span id='Nodext-database-postgre-Connection-method-sendConnectionError'>    sendConnectionError: function (inst, err) {
+</span>        var data = {
+            success: false,
+            message: &quot;Database connection error&quot;,
+        };
+        if (this.debug) {
+            data[&quot;error&quot;] = err;
+        }
+        inst.sendError(data, 500, true);
+    },
+<span id='Nodext-database-postgre-Connection-method-sendCallbackError'>    sendCallbackError: function (inst, err) {
+</span>        var data = {
+            success: false,
+            message: &quot;Error Code in Function Callback&quot;,
+        };
+        if (this.debug) {
+            data[&quot;error&quot;] = {
+                name: err.name,
+                message: err.message,
+                stack: err.stack
+            };
+            data[&quot;query&quot;] = &quot;Error in Nodext \n&quot; + err.stack;
+        }
+        inst.sendError(data, 500, true);
+    },
+<span id='Nodext-database-postgre-Connection-property-errorGroupCode'>    errorGroupCode: {
+</span>        &#39;1&#39;: { group: &#39;Class 00 — Successful Completion&#39; },
+        &#39;2&#39;: { group: &#39;Class 01 — Warning&#39; },
+        &#39;3&#39;: { group: &#39;Class 02 — No Data (this is also a warning class per the SQL standard)&#39; },
+        &#39;4&#39;: { group: &#39;Class 03 — SQL Statement Not Yet Complete&#39; },
+        &#39;5&#39;: { group: &#39;Class 08 — Connection Exception&#39; },
+        &#39;6&#39;: { group: &#39;Class 09 — Triggered Action Exception&#39; },
+        &#39;7&#39;: { group: &#39;Class 0A — Feature Not Supported&#39; },
+        &#39;8&#39;: { group: &#39;Class 0B — Invalid Transaction Initiation&#39; },
+        &#39;9&#39;: { group: &#39;Class 0F — Locator Exception&#39; },
+        &#39;10&#39;: { group: &#39;Class 0L — Invalid Grantor&#39; },
+        &#39;11&#39;: { group: &#39;Class 0P — Invalid Role Specification&#39; },
+        &#39;12&#39;: { group: &#39;Class 0Z — Diagnostics Exception&#39; },
+        &#39;13&#39;: { group: &#39;Class 20 — Case Not Found&#39; },
+        &#39;14&#39;: { group: &#39;Class 21 — Cardinality Violation&#39; },
+        &#39;15&#39;: { group: &#39;Class 22 — Data Exception&#39; },
+        &#39;16&#39;: { group: &#39;Class 23 — Integrity Constraint Violation&#39; },
+        &#39;17&#39;: { group: &#39;Class 24 — Invalid Cursor State&#39; },
+        &#39;18&#39;: { group: &#39;Class 25 — Invalid Transaction State&#39; },
+        &#39;19&#39;: { group: &#39;Class 26 — Invalid SQL Statement Name&#39; },
+        &#39;20&#39;: { group: &#39;Class 27 — Triggered Data Change Violation&#39; },
+        &#39;21&#39;: { group: &#39;Class 28 — Invalid Authorization Specification&#39; },
+        &#39;22&#39;: { group: &#39;Class 2B — Dependent Privilege Descriptors Still Exist&#39; },
+        &#39;23&#39;: { group: &#39;Class 2D — Invalid Transaction Termination&#39; },
+        &#39;24&#39;: { group: &#39;Class 2F — SQL Routine Exception&#39; },
+        &#39;25&#39;: { group: &#39;Class 34 — Invalid Cursor Name&#39; },
+        &#39;26&#39;: { group: &#39;Class 38 — External Routine Exception&#39; },
+        &#39;27&#39;: { group: &#39;Class 39 — External Routine Invocation Exception&#39; },
+        &#39;28&#39;: { group: &#39;Class 3B — Savepoint Exception&#39; },
+        &#39;29&#39;: { group: &#39;Class 3D — Invalid Catalog Name&#39; },
+        &#39;30&#39;: { group: &#39;Class 3F — Invalid Schema Name&#39; },
+        &#39;31&#39;: { group: &#39;Class 40 — Transaction Rollback&#39; },
+        &#39;32&#39;: { group: &#39;Class 42 — Syntax Error or Access Rule Violation&#39; },
+        &#39;33&#39;: { group: &#39;Class 44 — WITH CHECK OPTION Violation&#39; },
+        &#39;34&#39;: { group: &#39;Class 53 — Insufficient Resources&#39; },
+        &#39;35&#39;: { group: &#39;Class 54 — Program Limit Exceeded&#39; },
+        &#39;36&#39;: { group: &#39;Class 55 — Object Not In Prerequisite State&#39; },
+        &#39;37&#39;: { group: &#39;Class 57 — Operator Intervention&#39; },
+        &#39;38&#39;: { group: &#39;Class 58 — System Error (errors external to PostgreSQL itself)&#39; },
+        &#39;39&#39;: { group: &#39;Class F0 — Configuration File Error&#39; },
+        &#39;40&#39;: { group: &#39;Class HV — Foreign Data Wrapper Error (SQL/MED)&#39; },
+        &#39;41&#39;: { group: &#39;Class P0 — PL/pgSQL Error&#39; },
+        &#39;42&#39;: { group: &#39;Class XX — Internal Error&#39; }
+    },
+<span id='Nodext-database-postgre-Connection-property-errorCode'>    errorCode: {
+</span>        &#39;00000&#39;: { group: 1, message: &#39;successful_completion&#39; },
+        &#39;01000&#39;: { group: 2, message: &#39;warning&#39; },
+        &#39;0100C&#39;: { group: 2, message: &#39;dynamic_result_sets_returned&#39; },
+        &#39;01008&#39;: { group: 2, message: &#39;implicit_zero_bit_padding&#39; },
+        &#39;01003&#39;: { group: 2, message: &#39;null_value_eliminated_in_set_function&#39; },
+        &#39;01007&#39;: { group: 2, message: &#39;privilege_not_granted&#39; },
+        &#39;01006&#39;: { group: 2, message: &#39;privilege_not_revoked&#39; },
+        &#39;01004&#39;: { group: 2, message: &#39;string_data_right_truncation&#39; },
+        &#39;01P01&#39;: { group: 2, message: &#39;deprecated_feature&#39; },
+        &#39;02000&#39;: { group: 3, message: &#39;no_data&#39; },
+        &#39;02001&#39;: { group: 3, message: &#39;no_additional_dynamic_result_sets_returned&#39; },
+        &#39;03000&#39;: { group: 4, message: &#39;sql_statement_not_yet_complete&#39; },
+        &#39;08000&#39;: { group: 5, message: &#39;connection_exception&#39; },
+        &#39;08003&#39;: { group: 5, message: &#39;connection_does_not_exist&#39; },
+        &#39;08006&#39;: { group: 5, message: &#39;connection_failure&#39; },
+        &#39;08001&#39;: { group: 5, message: &#39;sqlclient_unable_to_establish_sqlconnection&#39; },
+        &#39;08004&#39;: { group: 5, message: &#39;sqlserver_rejected_establishment_of_sqlconnection&#39; },
+        &#39;08007&#39;: { group: 5, message: &#39;transaction_resolution_unknown&#39; },
+        &#39;08P01&#39;: { group: 5, message: &#39;protocol_violation&#39; },
+        &#39;09000&#39;: { group: 6, message: &#39;triggered_action_exception&#39; },
+        &#39;0A000&#39;: { group: 7, message: &#39;feature_not_supported&#39; },
+        &#39;0B000&#39;: { group: 8, message: &#39;invalid_transaction_initiation&#39; },
+        &#39;0F000&#39;: { group: 9, message: &#39;locator_exception&#39; },
+        &#39;0F001&#39;: { group: 9, message: &#39;invalid_locator_specification&#39; },
+        &#39;0L000&#39;: { group: 10, message: &#39;invalid_grantor&#39; },
+        &#39;0LP01&#39;: { group: 10, message: &#39;invalid_grant_operation&#39; },
+        &#39;0P000&#39;: { group: 11, message: &#39;invalid_role_specification&#39; },
+        &#39;0Z000&#39;: { group: 12, message: &#39;diagnostics_exception&#39; },
+        &#39;0Z002&#39;: { group: 12, message: &#39;stacked_diagnostics_accessed_without_active_handler&#39; },
+        &#39;20000&#39;: { group: 13, message: &#39;case_not_found&#39; },
+        &#39;21000&#39;: { group: 14, message: &#39;cardinality_violation&#39; },
+        &#39;22000&#39;: { group: 15, message: &#39;data_exception&#39; },
+        &#39;2202E&#39;: { group: 15, message: &#39;array_subscript_error&#39; },
+        &#39;22021&#39;: { group: 15, message: &#39;character_not_in_repertoire&#39; },
+        &#39;22008&#39;: { group: 15, message: &#39;datetime_field_overflow&#39; },
+        &#39;22012&#39;: { group: 15, message: &#39;division_by_zero&#39; },
+        &#39;22005&#39;: { group: 15, message: &#39;error_in_assignment&#39; },
+        &#39;2200B&#39;: { group: 15, message: &#39;escape_character_conflict&#39; },
+        &#39;22022&#39;: { group: 15, message: &#39;indicator_overflow&#39; },
+        &#39;22015&#39;: { group: 15, message: &#39;interval_field_overflow&#39; },
+        &#39;2201E&#39;: { group: 15, message: &#39;invalid_argument_for_logarithm&#39; },
+        &#39;22014&#39;: { group: 15, message: &#39;invalid_argument_for_ntile_function&#39; },
+        &#39;22016&#39;: { group: 15, message: &#39;invalid_argument_for_nth_value_function&#39; },
+        &#39;2201F&#39;: { group: 15, message: &#39;invalid_argument_for_power_function&#39; },
+        &#39;2201G&#39;: { group: 15, message: &#39;invalid_argument_for_width_bucket_function&#39; },
+        &#39;22018&#39;: { group: 15, message: &#39;invalid_character_value_for_cast&#39; },
+        &#39;22007&#39;: { group: 15, message: &#39;invalid_datetime_format&#39; },
+        &#39;22019&#39;: { group: 15, message: &#39;invalid_escape_character&#39; },
+        &#39;2200D&#39;: { group: 15, message: &#39;invalid_escape_octet&#39; },
+        &#39;22025&#39;: { group: 15, message: &#39;invalid_escape_sequence&#39; },
+        &#39;22P06&#39;: { group: 15, message: &#39;nonstandard_use_of_escape_character&#39; },
+        &#39;22010&#39;: { group: 15, message: &#39;invalid_indicator_parameter_value&#39; },
+        &#39;22023&#39;: { group: 15, message: &#39;invalid_parameter_value&#39; },
+        &#39;2201B&#39;: { group: 15, message: &#39;invalid_regular_expression&#39; },
+        &#39;2201W&#39;: { group: 15, message: &#39;invalid_row_count_in_limit_clause&#39; },
+        &#39;2201X&#39;: { group: 15, message: &#39;invalid_row_count_in_result_offset_clause&#39; },
+        &#39;2202H&#39;: { group: 15, message: &#39;invalid_tablesample_argument&#39; },
+        &#39;2202G&#39;: { group: 15, message: &#39;invalid_tablesample_repeat&#39; },
+        &#39;22009&#39;: { group: 15, message: &#39;invalid_time_zone_displacement_value&#39; },
+        &#39;2200C&#39;: { group: 15, message: &#39;invalid_use_of_escape_character&#39; },
+        &#39;2200G&#39;: { group: 15, message: &#39;most_specific_type_mismatch&#39; },
+        &#39;22004&#39;: { group: 15, message: &#39;null_value_not_allowed&#39; },
+        &#39;22002&#39;: { group: 15, message: &#39;null_value_no_indicator_parameter&#39; },
+        &#39;22003&#39;: { group: 15, message: &#39;numeric_value_out_of_range&#39; },
+        &#39;22026&#39;: { group: 15, message: &#39;string_data_length_mismatch&#39; },
+        &#39;22001&#39;: { group: 15, message: &#39;string_data_right_truncation&#39; },
+        &#39;22011&#39;: { group: 15, message: &#39;substring_error&#39; },
+        &#39;22027&#39;: { group: 15, message: &#39;trim_error&#39; },
+        &#39;22024&#39;: { group: 15, message: &#39;unterminated_c_string&#39; },
+        &#39;2200F&#39;: { group: 15, message: &#39;zero_length_character_string&#39; },
+        &#39;22P01&#39;: { group: 15, message: &#39;floating_point_exception&#39; },
+        &#39;22P02&#39;: { group: 15, message: &#39;invalid_text_representation&#39; },
+        &#39;22P03&#39;: { group: 15, message: &#39;invalid_binary_representation&#39; },
+        &#39;22P04&#39;: { group: 15, message: &#39;bad_copy_file_format&#39; },
+        &#39;22P05&#39;: { group: 15, message: &#39;untranslatable_character&#39; },
+        &#39;2200L&#39;: { group: 15, message: &#39;not_an_xml_document&#39; },
+        &#39;2200M&#39;: { group: 15, message: &#39;invalid_xml_document&#39; },
+        &#39;2200N&#39;: { group: 15, message: &#39;invalid_xml_content&#39; },
+        &#39;2200S&#39;: { group: 15, message: &#39;invalid_xml_comment&#39; },
+        &#39;2200T&#39;: { group: 15, message: &#39;invalid_xml_processing_instruction&#39; },
+        &#39;23000&#39;: { group: 16, message: &#39;integrity_constraint_violation&#39; },
+        &#39;23001&#39;: { group: 16, message: &#39;restrict_violation&#39; },
+        &#39;23502&#39;: { group: 16, message: &#39;not_null_violation&#39; },
+        &#39;23503&#39;: { group: 16, message: &#39;foreign_key_violation&#39; },
+        &#39;23505&#39;: { group: 16, message: &#39;unique_violation&#39; },
+        &#39;23514&#39;: { group: 16, message: &#39;check_violation&#39; },
+        &#39;23P01&#39;: { group: 16, message: &#39;exclusion_violation&#39; },
+        &#39;24000&#39;: { group: 17, message: &#39;invalid_cursor_state&#39; },
+        &#39;25000&#39;: { group: 18, message: &#39;invalid_transaction_state&#39; },
+        &#39;25001&#39;: { group: 18, message: &#39;active_sql_transaction&#39; },
+        &#39;25002&#39;: { group: 18, message: &#39;branch_transaction_already_active&#39; },
+        &#39;25008&#39;: { group: 18, message: &#39;held_cursor_requires_same_isolation_level&#39; },
+        &#39;25003&#39;: { group: 18, message: &#39;inappropriate_access_mode_for_branch_transaction&#39; },
+        &#39;25004&#39;: { group: 18, message: &#39;inappropriate_isolation_level_for_branch_transaction&#39; },
+        &#39;25005&#39;: { group: 18, message: &#39;no_active_sql_transaction_for_branch_transaction&#39; },
+        &#39;25006&#39;: { group: 18, message: &#39;read_only_sql_transaction&#39; },
+        &#39;25007&#39;: { group: 18, message: &#39;schema_and_data_statement_mixing_not_supported&#39; },
+        &#39;25P01&#39;: { group: 18, message: &#39;no_active_sql_transaction&#39; },
+        &#39;25P02&#39;: { group: 18, message: &#39;in_failed_sql_transaction&#39; },
+        &#39;26000&#39;: { group: 19, message: &#39;invalid_sql_statement_name&#39; },
+        &#39;27000&#39;: { group: 20, message: &#39;triggered_data_change_violation&#39; },
+        &#39;28000&#39;: { group: 21, message: &#39;invalid_authorization_specification&#39; },
+        &#39;28P01&#39;: { group: 21, message: &#39;invalid_password&#39; },
+        &#39;2B000&#39;: { group: 22, message: &#39;dependent_privilege_descriptors_still_exist&#39; },
+        &#39;2BP01&#39;: { group: 22, message: &#39;dependent_objects_still_exist&#39; },
+        &#39;2D000&#39;: { group: 23, message: &#39;invalid_transaction_termination&#39; },
+        &#39;2F000&#39;: { group: 24, message: &#39;sql_routine_exception&#39; },
+        &#39;2F005&#39;: { group: 24, message: &#39;function_executed_no_return_statement&#39; },
+        &#39;2F002&#39;: { group: 24, message: &#39;modifying_sql_data_not_permitted&#39; },
+        &#39;2F003&#39;: { group: 24, message: &#39;prohibited_sql_statement_attempted&#39; },
+        &#39;2F004&#39;: { group: 24, message: &#39;reading_sql_data_not_permitted&#39; },
+        &#39;34000&#39;: { group: 25, message: &#39;invalid_cursor_name&#39; },
+        &#39;38000&#39;: { group: 26, message: &#39;external_routine_exception&#39; },
+        &#39;38001&#39;: { group: 26, message: &#39;containing_sql_not_permitted&#39; },
+        &#39;38002&#39;: { group: 26, message: &#39;modifying_sql_data_not_permitted&#39; },
+        &#39;38003&#39;: { group: 26, message: &#39;prohibited_sql_statement_attempted&#39; },
+        &#39;38004&#39;: { group: 26, message: &#39;reading_sql_data_not_permitted&#39; },
+        &#39;39000&#39;: { group: 27, message: &#39;external_routine_invocation_exception&#39; },
+        &#39;39001&#39;: { group: 27, message: &#39;invalid_sqlstate_returned&#39; },
+        &#39;39004&#39;: { group: 27, message: &#39;null_value_not_allowed&#39; },
+        &#39;39P01&#39;: { group: 27, message: &#39;trigger_protocol_violated&#39; },
+        &#39;39P02&#39;: { group: 27, message: &#39;srf_protocol_violated&#39; },
+        &#39;39P03&#39;: { group: 27, message: &#39;event_trigger_protocol_violated&#39; },
+        &#39;3B000&#39;: { group: 28, message: &#39;savepoint_exception&#39; },
+        &#39;3B001&#39;: { group: 28, message: &#39;invalid_savepoint_specification&#39; },
+        &#39;3D000&#39;: { group: 29, message: &#39;invalid_catalog_name&#39; },
+        &#39;3F000&#39;: { group: 30, message: &#39;invalid_schema_name&#39; },
+        &#39;40000&#39;: { group: 31, message: &#39;transaction_rollback&#39; },
+        &#39;40002&#39;: { group: 31, message: &#39;transaction_integrity_constraint_violation&#39; },
+        &#39;40001&#39;: { group: 31, message: &#39;serialization_failure&#39; },
+        &#39;40003&#39;: { group: 31, message: &#39;statement_completion_unknown&#39; },
+        &#39;40P01&#39;: { group: 31, message: &#39;deadlock_detected&#39; },
+        &#39;42000&#39;: { group: 32, message: &#39;syntax_error_or_access_rule_violation&#39; },
+        &#39;42601&#39;: { group: 32, message: &#39;syntax_error&#39; },
+        &#39;42501&#39;: { group: 32, message: &#39;insufficient_privilege&#39; },
+        &#39;42846&#39;: { group: 32, message: &#39;cannot_coerce&#39; },
+        &#39;42803&#39;: { group: 32, message: &#39;grouping_error&#39; },
+        &#39;42P20&#39;: { group: 32, message: &#39;windowing_error&#39; },
+        &#39;42P19&#39;: { group: 32, message: &#39;invalid_recursion&#39; },
+        &#39;42830&#39;: { group: 32, message: &#39;invalid_foreign_key&#39; },
+        &#39;42602&#39;: { group: 32, message: &#39;invalid_name&#39; },
+        &#39;42622&#39;: { group: 32, message: &#39;name_too_long&#39; },
+        &#39;42939&#39;: { group: 32, message: &#39;reserved_name&#39; },
+        &#39;42804&#39;: { group: 32, message: &#39;datatype_mismatch&#39; },
+        &#39;42P18&#39;: { group: 32, message: &#39;indeterminate_datatype&#39; },
+        &#39;42P21&#39;: { group: 32, message: &#39;collation_mismatch&#39; },
+        &#39;42P22&#39;: { group: 32, message: &#39;indeterminate_collation&#39; },
+        &#39;42809&#39;: { group: 32, message: &#39;wrong_object_type&#39; },
+        &#39;42703&#39;: { group: 32, message: &#39;undefined_column&#39; },
+        &#39;42883&#39;: { group: 32, message: &#39;undefined_function&#39; },
+        &#39;42P01&#39;: { group: 32, message: &#39;undefined_table&#39; },
+        &#39;42P02&#39;: { group: 32, message: &#39;undefined_parameter&#39; },
+        &#39;42704&#39;: { group: 32, message: &#39;undefined_object&#39; },
+        &#39;42701&#39;: { group: 32, message: &#39;duplicate_column&#39; },
+        &#39;42P03&#39;: { group: 32, message: &#39;duplicate_cursor&#39; },
+        &#39;42P04&#39;: { group: 32, message: &#39;duplicate_database&#39; },
+        &#39;42723&#39;: { group: 32, message: &#39;duplicate_function&#39; },
+        &#39;42P05&#39;: { group: 32, message: &#39;duplicate_prepared_statement&#39; },
+        &#39;42P06&#39;: { group: 32, message: &#39;duplicate_schema&#39; },
+        &#39;42P07&#39;: { group: 32, message: &#39;duplicate_table&#39; },
+        &#39;42712&#39;: { group: 32, message: &#39;duplicate_alias&#39; },
+        &#39;42710&#39;: { group: 32, message: &#39;duplicate_object&#39; },
+        &#39;42702&#39;: { group: 32, message: &#39;ambiguous_column&#39; },
+        &#39;42725&#39;: { group: 32, message: &#39;ambiguous_function&#39; },
+        &#39;42P08&#39;: { group: 32, message: &#39;ambiguous_parameter&#39; },
+        &#39;42P09&#39;: { group: 32, message: &#39;ambiguous_alias&#39; },
+        &#39;42P10&#39;: { group: 32, message: &#39;invalid_column_reference&#39; },
+        &#39;42611&#39;: { group: 32, message: &#39;invalid_column_definition&#39; },
+        &#39;42P11&#39;: { group: 32, message: &#39;invalid_cursor_definition&#39; },
+        &#39;42P12&#39;: { group: 32, message: &#39;invalid_database_definition&#39; },
+        &#39;42P13&#39;: { group: 32, message: &#39;invalid_function_definition&#39; },
+        &#39;42P14&#39;: { group: 32, message: &#39;invalid_prepared_statement_definition&#39; },
+        &#39;42P15&#39;: { group: 32, message: &#39;invalid_schema_definition&#39; },
+        &#39;42P16&#39;: { group: 32, message: &#39;invalid_table_definition&#39; },
+        &#39;42P17&#39;: { group: 32, message: &#39;invalid_object_definition&#39; },
+        &#39;44000&#39;: { group: 33, message: &#39;with_check_option_violation&#39; },
+        &#39;53000&#39;: { group: 34, message: &#39;insufficient_resources&#39; },
+        &#39;53100&#39;: { group: 34, message: &#39;disk_full&#39; },
+        &#39;53200&#39;: { group: 34, message: &#39;out_of_memory&#39; },
+        &#39;53300&#39;: { group: 34, message: &#39;too_many_connections&#39; },
+        &#39;53400&#39;: { group: 34, message: &#39;configuration_limit_exceeded&#39; },
+        &#39;54000&#39;: { group: 35, message: &#39;program_limit_exceeded&#39; },
+        &#39;54001&#39;: { group: 35, message: &#39;statement_too_complex&#39; },
+        &#39;54011&#39;: { group: 35, message: &#39;too_many_columns&#39; },
+        &#39;54023&#39;: { group: 35, message: &#39;too_many_arguments&#39; },
+        &#39;55000&#39;: { group: 36, message: &#39;object_not_in_prerequisite_state&#39; },
+        &#39;55006&#39;: { group: 36, message: &#39;object_in_use&#39; },
+        &#39;55P02&#39;: { group: 36, message: &#39;cant_change_runtime_param&#39; },
+        &#39;55P03&#39;: { group: 36, message: &#39;lock_not_available&#39; },
+        &#39;57000&#39;: { group: 37, message: &#39;operator_intervention&#39; },
+        &#39;57014&#39;: { group: 37, message: &#39;query_canceled&#39; },
+        &#39;57P01&#39;: { group: 37, message: &#39;admin_shutdown&#39; },
+        &#39;57P02&#39;: { group: 37, message: &#39;crash_shutdown&#39; },
+        &#39;57P03&#39;: { group: 37, message: &#39;cannot_connect_now&#39; },
+        &#39;57P04&#39;: { group: 37, message: &#39;database_dropped&#39; },
+        &#39;58000&#39;: { group: 38, message: &#39;system_error&#39; },
+        &#39;58030&#39;: { group: 38, message: &#39;io_error&#39; },
+        &#39;58P01&#39;: { group: 38, message: &#39;undefined_file&#39; },
+        &#39;58P02&#39;: { group: 38, message: &#39;duplicate_file&#39; },
+        &#39;F0000&#39;: { group: 39, message: &#39;config_file_error&#39; },
+        &#39;F0001&#39;: { group: 39, message: &#39;lock_file_exists&#39; },
+        &#39;HV000&#39;: { group: 40, message: &#39;fdw_error&#39; },
+        &#39;HV005&#39;: { group: 40, message: &#39;fdw_column_name_not_found&#39; },
+        &#39;HV002&#39;: { group: 40, message: &#39;fdw_dynamic_parameter_value_needed&#39; },
+        &#39;HV010&#39;: { group: 40, message: &#39;fdw_function_sequence_error&#39; },
+        &#39;HV021&#39;: { group: 40, message: &#39;fdw_inconsistent_descriptor_information&#39; },
+        &#39;HV024&#39;: { group: 40, message: &#39;fdw_invalid_attribute_value&#39; },
+        &#39;HV007&#39;: { group: 40, message: &#39;fdw_invalid_column_name&#39; },
+        &#39;HV008&#39;: { group: 40, message: &#39;fdw_invalid_column_number&#39; },
+        &#39;HV004&#39;: { group: 40, message: &#39;fdw_invalid_data_type&#39; },
+        &#39;HV006&#39;: { group: 40, message: &#39;fdw_invalid_data_type_descriptors&#39; },
+        &#39;HV091&#39;: { group: 40, message: &#39;fdw_invalid_descriptor_field_identifier&#39; },
+        &#39;HV00B&#39;: { group: 40, message: &#39;fdw_invalid_handle&#39; },
+        &#39;HV00C&#39;: { group: 40, message: &#39;fdw_invalid_option_index&#39; },
+        &#39;HV00D&#39;: { group: 40, message: &#39;fdw_invalid_option_name&#39; },
+        &#39;HV090&#39;: { group: 40, message: &#39;fdw_invalid_string_length_or_buffer_length&#39; },
+        &#39;HV00A&#39;: { group: 40, message: &#39;fdw_invalid_string_format&#39; },
+        &#39;HV009&#39;: { group: 40, message: &#39;fdw_invalid_use_of_null_pointer&#39; },
+        &#39;HV014&#39;: { group: 40, message: &#39;fdw_too_many_handles&#39; },
+        &#39;HV001&#39;: { group: 40, message: &#39;fdw_out_of_memory&#39; },
+        &#39;HV00P&#39;: { group: 40, message: &#39;fdw_no_schemas&#39; },
+        &#39;HV00J&#39;: { group: 40, message: &#39;fdw_option_name_not_found&#39; },
+        &#39;HV00K&#39;: { group: 40, message: &#39;fdw_reply_handle&#39; },
+        &#39;HV00Q&#39;: { group: 40, message: &#39;fdw_schema_not_found&#39; },
+        &#39;HV00R&#39;: { group: 40, message: &#39;fdw_table_not_found&#39; },
+        &#39;HV00L&#39;: { group: 40, message: &#39;fdw_unable_to_create_execution&#39; },
+        &#39;HV00M&#39;: { group: 40, message: &#39;fdw_unable_to_create_reply&#39; },
+        &#39;HV00N&#39;: { group: 40, message: &#39;fdw_unable_to_establish_connection&#39; },
+        &#39;P0000&#39;: { group: 41, message: &#39;plpgsql_error&#39; },
+        &#39;P0001&#39;: { group: 41, message: &#39;raise_exception&#39; },
+        &#39;P0002&#39;: { group: 41, message: &#39;no_data_found&#39; },
+        &#39;P0003&#39;: { group: 41, message: &#39;too_many_rows&#39; },
+        &#39;P0004&#39;: { group: 41, message: &#39;assert_failure&#39; },
+        &#39;XX000&#39;: { group: 42, message: &#39;internal_error&#39; },
+        &#39;XX001&#39;: { group: 42, message: &#39;data_corrupted&#39; },
+        &#39;XX002&#39;: { group: 42, message: &#39;index_corrupted&#39; }
+    },
+<span id='Nodext-database-postgre-Connection-method-getCodeErrorBase'>    getCodeErrorBase: function (id) {
+</span>        return this.errorCode[id];
+    },
+<span id='Nodext-database-postgre-Connection-method-getCodeError'>    getCodeError: function (id) {
+</span>        var obj = {
+            group: &quot;&quot;,
+            message: &quot;&quot;,
+            code: id
+        };
+        if (this.errorCode[id]) {
+            Nodext.apply(obj, this.errorCode[id] || {});
+            Nodext.apply(obj, this.errorGroupCode[obj.group || &#39;&#39;] || {});
+        }
+        return obj;
+    },
+<span id='Nodext-database-postgre-Connection-method-errorByTableUndefined'>    errorByTableUndefined: function (id) {
+</span>        if (Nodext.Array.contains([&#39;42P01&#39;, &#39;3F000&#39;], id)) {
+            return true;
+        } else {
+            return false;
+        }
+    },
+<span id='Nodext-database-postgre-Connection-method-getMessageError'>    getMessageError: function (err) {
+</span>        if (err.code === &#39;23505&#39;) {
+            return this.getEUniqueViolation(err);
+        }
+        return null;
+    },
+<span id='Nodext-database-postgre-Connection-method-getEUniqueViolation'>    getEUniqueViolation: function (err) {
+</span>        var data;
+        if (err.detail &amp;&amp; (data = /\(.*\)/i.exec(err.detail))) {
+            data = data[0].split(&quot;=&quot;);
+            data[0] = data[0].substring(1, data[0].length - 1);
+            data[1] = data[1].substring(1, data[1].length - 1);
+            return {
+                key: data[0],
+                value: data[1],
+                type: &quot;unique_violation&quot;,
+                text: Nodext.String.format(&quot;El valor {0} ya existe en el campo {1}&quot;, data[1], data[0])
+            };
+        }
+        data = null;
+        return null;
+    }
+});</pre>
+</body>
+</html>

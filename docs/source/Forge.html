@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-database-action-Forge'>/**
+</span> * 
+ */
+Nodext.define(&quot;Nodext.database.action.Forge&quot;, {
+    extend: &quot;Nodext.database.action.Base&quot;,
+    alias: &#39;dbaction.forge&#39;,
+<span id='Nodext-database-action-Forge-cfg-action'>    action: &quot;forge&quot;,
+</span>    config: {
+<span id='Nodext-database-action-Forge-cfg-queryObject'>        queryObject: null,
+</span><span id='Nodext-database-action-Forge-cfg-requireCompile'>        requireCompile: true,
+</span><span id='Nodext-database-action-Forge-cfg-compileReady'>        compileReady: true,
+</span><span id='Nodext-database-action-Forge-cfg-result'>        result: null
+</span>    },
+<span id='Nodext-database-action-Forge-method-init'>    init: function () {
+</span>        //        this.result = ;
+    },
+<span id='Nodext-database-action-Forge-method-continue'>    continue: function () {
+</span>        if (this.hasExecute) {
+            return false;
+        } else {
+            return true;
+        }
+    },
+<span id='Nodext-database-action-Forge-method-getNext'>    getNext: function (rsg) {
+</span>        this.hasExecute = true;
+        return this.query;
+    },
+<span id='Nodext-database-action-Forge-method-setResultBatch'>    setResultBatch: function (result) {
+</span>        this.result = result;
+    },
+<span id='Nodext-database-action-Forge-method-destroy'>    destroy: function () {
+</span>        Nodext.destroy(this.queryObject);
+        if (this.result) {
+            Nodext.destroyArray(this.result.rows, this.result.fields);
+        }
+        Nodext.destroyClass(this.result);
+        this.callParent();
+        Nodext.destroyClass(this);
+        delete this;
+    }
+
+});</pre>
+</body>
+</html>

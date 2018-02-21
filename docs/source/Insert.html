@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-database-action-Insert'>/**
+</span> * 
+ */
+Nodext.define(&quot;Nodext.database.action.Insert&quot;, {
+    extend: &quot;Nodext.database.action.Base&quot;,
+    alias: &#39;dbaction.insert&#39;,
+<span id='Nodext-database-action-Insert-cfg-action'>    action: &quot;insert&quot;,
+</span>    config: {
+<span id='Nodext-database-action-Insert-cfg-resultBatchData'>        resultBatchData: null,
+</span><span id='Nodext-database-action-Insert-cfg-resultBatchRowCount'>        resultBatchRowCount: null,
+</span><span id='Nodext-database-action-Insert-cfg-mode'>        mode: null,
+</span><span id='Nodext-database-action-Insert-cfg-table'>        table: null,
+</span><span id='Nodext-database-action-Insert-cfg-records'>        records: null,
+</span><span id='Nodext-database-action-Insert-cfg-index'>        index: -1
+</span>    },
+<span id='Nodext-database-action-Insert-property-validateKeys'>    validateKeys: null,
+</span><span id='Nodext-database-action-Insert-property-qb_keys'>    qb_keys: null,
+</span><span id='Nodext-database-action-Insert-property-qb_keys_string'>    qb_keys_string: null,
+</span><span id='Nodext-database-action-Insert-property-qb_set'>    qb_set: null,
+</span><span id='Nodext-database-action-Insert-property-insertSize'>    insertSize: null,
+</span><span id='Nodext-database-action-Insert-property-returnFields'>    returnFields: null,
+</span><span id='Nodext-database-action-Insert-property-deleteFields'>    deleteFields: null,
+</span><span id='Nodext-database-action-Insert-property-addFields'>    addFields: null,
+</span><span id='Nodext-database-action-Insert-property-escape'>    escape: null,
+</span><span id='Nodext-database-action-Insert-method-init'>    init: function () {
+</span>        this.result = [];
+        this.addFields = this.addFields || {};
+    },
+<span id='Nodext-database-action-Insert-method-continue'>    continue: function () {
+</span>        if (this.mode === &quot;basic&quot;) {
+            if (this.query[this.index + 1]) {
+                return true;
+            } else {
+                return false;
+            }
+        } else if (this.mode === &quot;build&quot;) {
+            if (this.records[this.index + 1]) {
+                return true;
+            } else {
+                return false;
+            }
+        } else if (this.mode === &quot;select&quot;) {
+            if (this.index &lt; 0) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+    },
+<span id='Nodext-database-action-Insert-method-next'>    next: function () {
+</span>        this.index++;
+    },
+<span id='Nodext-database-action-Insert-method-getNext'>    getNext: function (rsg) {
+</span>        this.index++;
+        if (this.mode === &quot;basic&quot;) {
+            return this.query[this.index];
+        } else if (this.mode === &quot;build&quot;) {
+            // console.log(this.records);
+            this.fireEvent(&quot;beforebuildrecord&quot;, rsg, this, this.records[this.index], this.index);
+            var q = this.qb.buildRecInsert(this.records[this.index], this);
+            this.query.push(q);
+            return q;
+        } else if (this.mode === &quot;select&quot;) {
+            //            console.log(this.query);
+            return this.query;
+        }
+    },
+<span id='Nodext-database-action-Insert-method-setResultBatch'>    setResultBatch: function (result) {
+</span>        this.result.push(result);
+    },
+<span id='Nodext-database-action-Insert-method-getDataLastInsert'>    getDataLastInsert: function () {
+</span>        if (this.result[this.result.length - 1]) {
+            return this.result[this.result.length - 1].rows || [];
+        } else {
+            return [];
+        }
+    },
+<span id='Nodext-database-action-Insert-method-getData'>    getData: function () {
+</span>        if (this.resultBatchData) {
+            return this.resultBatchData;
+        } else {
+            var me = this;
+            me.resultBatchData = [];
+            for (var x = 0; x &lt; me.result.length; x++) {
+                if (me.result[x].rows &amp;&amp; me.result[x].rows.length &gt; 0) {
+                    me.resultBatchData = me.resultBatchData.concat(me.result[x].rows);
+                }
+            }
+            return me.resultBatchData.length &gt; 0 ? me.resultBatchData : null;
+        }
+    },
+<span id='Nodext-database-action-Insert-method-getRow'>    getRow: function () {
+</span>        var row;
+        for (var x = 0; x &lt; this.result.length; x++) {
+            if (this.result[x].rows &amp;&amp; this.result[x].rows[0]) {
+                row = this.result[x].rows[0];
+                break;
+            }
+        }
+        return row;
+    },
+<span id='Nodext-database-action-Insert-method-getRowsAffected'>    getRowsAffected: function () {
+</span>        return this.numRows();
+    },
+<span id='Nodext-database-action-Insert-method-numRows'>    numRows: function () {
+</span>        if (this.resultBatchRowCount) {
+            return this.resultBatchRowCount;
+        } else {
+            var me = this;
+            this.resultBatchRowCount = 0;
+            for (var x = 0; x &lt; me.result.length; x++) {
+                if (me.result[x].rowCount) {
+                    this.resultBatchRowCount += me.result[x].rowCount;
+                }
+            }
+            return this.resultBatchRowCount;
+        }
+    },
+<span id='Nodext-database-action-Insert-method-getFields'>    getFields: function () {
+</span>        return this.result.fields;
+    },
+<span id='Nodext-database-action-Insert-method-destroy'>    destroy: function () {
+</span>        //        console.log(&quot;destroy insert&quot;);
+        for (var x = 0; x &lt; this.result.length; x++) {
+            Nodext.destroyArray(this.result[x].rows, this.result[x].fields);
+            Nodext.destroyClass(this.result[x]);
+        }
+        this.result = null;
+        Nodext.destroyArray(this.query, this.records, this.qb_set, this.arrayKeys, this.qb_keys, this.resultBatchData);
+        this.callParent();
+        delete this;
+    }
+});</pre>
+</body>
+</html>

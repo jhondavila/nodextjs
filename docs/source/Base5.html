@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-http-session-Base'>/**
+</span> * 
+ */
+Nodext.define(&quot;Nodext.http.session.Base&quot;, {
+    extend: &quot;Nodext.BaseConfig&quot;,
+    mixins: [
+        &#39;Ext.mixin.Factoryable&#39;
+    ],
+<span id='Nodext-http-session-Base-property-S-configPrefixed'>    $configPrefixed: false,
+</span><span id='Nodext-http-session-Base-property-S-configStrict'>    $configStrict: false,
+</span>    alias: &#39;session.Base&#39;,
+<span id='Nodext-http-session-Base-property-factoryConfig'>    factoryConfig: {
+</span>        defaultType: &#39;Base&#39;
+    },
+<span id='Nodext-http-session-Base-property-libSession'>    libSession: null,
+</span>
+<span id='Nodext-http-session-Base-method-constructor'>    constructor: function () {
+</span>        this.callParent(arguments);
+    }
+});</pre>
+</body>
+</html>

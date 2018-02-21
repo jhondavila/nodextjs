@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-app-FileLoader'>/**
+</span> * 
+ */
+Nodext.define(&quot;Nodext.app.FileLoader&quot;, {
+    extend: &quot;Ext.Base&quot;,
+    mixins: {
+        observable: &#39;Ext.util.Observable&#39;
+    },
+    requires: [&quot;Nodext.module.FileSystem&quot;],
+<span id='Nodext-app-FileLoader-property-S-configPrefixed'>    $configPrefixed: false,
+</span><span id='Nodext-app-FileLoader-property-S-configStrict'>    $configStrict: false,
+</span>    config: {
+<span id='Nodext-app-FileLoader-cfg-appNode'>        /**
+</span>         * @cfg appNode {@link Nodext.app.Node}
+         */
+        appNode: null,
+<span id='Nodext-app-FileLoader-cfg-basePath'>        /**
+</span>         * @cfg {String} basePath Directorio Base, por defecto se considera el de {@link Nodext.app.Node#path}
+         */
+        basePath: null,
+<span id='Nodext-app-FileLoader-cfg-ignoreFilesWith'>        /**
+</span>         * @cfg {Array} ignoreFilesWith
+         */
+        ignoreFilesWith: [&quot;ignore&quot;],
+
+<span id='Nodext-app-FileLoader-cfg-autoLoad'>        /**
+</span>         * @cfg {Boolean} autoLoad 
+         */
+        autoLoad: true,
+<span id='Nodext-app-FileLoader-cfg-loaderPath'>        /**
+</span>         * @cfg {String} loaderPath
+         * Directorio a Cargar
+         */
+        loaderPath: null,
+    },
+<span id='Nodext-app-FileLoader-property-RegExPattern'>    /**
+</span>     * @property {RegExp} RegExPattern 
+     */
+    RegExPattern: null,
+<span id='Nodext-app-FileLoader-property-items'>    /**
+</span>    * @property {Ext.util.Collection} items
+    */
+    items: null,
+<span id='Nodext-app-FileLoader-method-constructor'>    constructor: function (config) {
+</span>        Nodext.apply(this, config);
+        this.initConfig(config);
+        this.mixins.observable.constructor.call(this, config);
+        this.items = Nodext.create(&quot;Ext.util.Collection&quot;, {
+            keyFn: this.getIdItem
+        });
+        if (this.autoLoad) {
+            this.start();
+        }
+    },
+<span id='Nodext-app-FileLoader-method-getClsByKey'>    /**
+</span>     * @method
+     * Devuelve una clase instanciada que coincida con el key pasado.
+     */
+    getClsByKey: function (key) {
+        return this.items.get(key);
+    },
+<span id='Nodext-app-FileLoader-method-getIdItem'>    /**
+</span>     * @method getIdItem
+     * Retorna el id de un elemento para poder añadirlo a la coleccion
+     * @return {String|Number}
+     */
+    getIdItem: function (item) {
+        return item._keyItem;
+    },
+<span id='Nodext-app-FileLoader-method-add'>    /**
+</span>     * @method add
+     * Añade un elemento a la lista de items cargados.
+     */
+    add: function (item) {
+        this.items.add(item);
+    },
+<span id='Nodext-app-FileLoader-method-start'>    /**
+</span>     * @method start
+     * Inicia el proceso de carga de archivos.
+     */
+    start: function () {
+        var me = this;
+        if (!this.appNode &amp;&amp; !this.basePath) {
+            Nodext.logError(&quot;No se encontro el parametro appNode ni el basePath&quot;);
+            return false;
+        }
+        this.fireEvent(&quot;beforeload&quot;, this, this.items);
+        var appName;
+        if (this.appNode) {
+            if (!this.basePath) {
+                this.basePath = this.appNode.getPath();
+            }
+            appName = this.appNode.appName;
+        }
+        var fullPath = this.basePath + &quot;/&quot; + this.loaderPath;
+        this.RegExPattern = eval(&quot;/(&quot; + (this.ignoreFilesWith ? this.ignoreFilesWith.join(&quot;|&quot;) : [].join(&quot;|&quot;)) + &quot;)/gi&quot;);
+
+
+
+        // console.log(files);
+
+        if (appName) {
+            var files = Nodext.loadFilesByPath(fullPath, null, { RegExPattern: this.RegExPattern });
+            for (var x = 0; x &lt; files.length; x++) {
+                this.buildClass(files[x]);
+            }
+            // Nodext.Array.each(paths, function (path) {
+            //     path = path.replace(this.basePath, appName);
+            //     var classArray = path.split(&quot;/&quot;);
+            //     var classString = classArray.join(&quot;.&quot;);
+            //     var alias = classArray.slice(3, classArray.length).join(&quot;.&quot;);
+            //     alias = alias.substring(0, alias.length - 3);
+            //     classString = classString.substring(0, classString.length - 3);
+            //     console.log(alias);
+            //     me.buildClass(classString, alias);
+            //     classArray = null;
+            // }, this);
+        } else {
+            var paths = this.getFiles(fullPath), path;
+            Nodext.Array.each(paths, function (path) {
+                try {
+                    require(path);
+                    this.fireEvent(&quot;loaditem&quot;, this, path, path.replace(this.basePath, &quot;&quot;));
+                } catch (e) {
+                    Nodext.logError(&quot;No found file&quot; + path);
+                }
+            }, this);
+        }
+
+        paths = fullPath = path = null;
+        this.fireEvent(&quot;afterload&quot;, this, this.items);
+    },
+<span id='Nodext-app-FileLoader-method-buildClass'>    /**
+</span>     * @method buildClass
+     * @template
+     * Inicia la creacion de clases
+     */
+    buildClass: function (className) {
+        var item = Nodext.create(className, {});
+        item._keyItem = className;
+        this.add(item);
+    },
+<span id='Nodext-app-FileLoader-method-getFiles'>    /**
+</span>     * @method getFiles
+     * @private
+     * Obtiene los path de los archivos en el directorio a buscar
+     * @return {Array}
+     */
+    getFiles: function (dir, files_) {
+        files_ = files_ || [];
+        var me = this, files;
+        try {
+            files = Nodext.FS.readdirSync(dir);
+        } catch (error) {
+            Nodext.logError(&quot;No found path&quot; + dir);
+            files = [];
+        }
+        for (var i in files) {
+            var name = dir + &#39;/&#39; + files[i];
+            if (!files[i].match(me.RegExPattern)) {
+                if (Nodext.FS.statSync(name).isDirectory()) {
+                    me.getFiles(name, files_);
+                } else {
+                    if (files[i].match(/(js)$/ig)) {
+                        files_.push(name);
+                    }
+                }
+            }
+        }
+        return files_;
+    }
+
+});</pre>
+</body>
+</html>

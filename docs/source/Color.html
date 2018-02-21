@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-console-Color'>/**
+</span> * 
+ */
+Nodext.define(&quot;Nodext.console.Color&quot;, {
+    extend: &quot;Ext.Base&quot;,
+<span id='Nodext-console-Color-property-S-configPrefixed'>    $configPrefixed: false,
+</span>    alternateClassName: [&quot;Nodext.ConsoleColor&quot;],
+    singleton: true,
+    config: {
+<span id='Nodext-console-Color-cfg-color'>        color: true
+</span>    },
+<span id='Nodext-console-Color-property-lib'>    /**
+</span>     * @property {NodeModule} lib
+     */
+    lib: null,
+<span id='Nodext-console-Color-method-constructor'>    constructor: function (cfg) {
+</span>        Nodext.apply(this, cfg || {});
+        try {
+            this.lib = require(&#39;colors&#39;);
+        } catch (e) {
+
+        }
+        this.initConfig(cfg);
+    },
+<span id='Nodext-console-Color-method-loadCfgFromAppNode'>    loadCfgFromAppNode: function (appNode) {
+</span>        this.setColor(appNode.Global.consoleColor);
+    },
+<span id='Nodext-console-Color-method-setColor'>    setColor: function (color) {
+</span>        if (color) {
+            Nodext.apply(Nodext, {
+                logPid: function () {
+                    console.log(&quot;run in Pid :&quot;.cyan + process.pid.toString().cyan)
+                },
+                trace: function (message, color) {
+                    if (typeof message === &quot;string&quot;) {
+                        console.trace(message[color]);
+                    } else {
+                        console.trace(message);
+                    }
+                },
+                logMsg: function (message, color) {
+                    if (typeof message === &quot;string&quot; &amp;&amp; color) {
+                        console.log(message[color]);
+                    } else {
+                        console.log(message.green);
+                    }
+                },
+                logClassReady: function (message, color) {
+                    if (typeof message === &quot;string&quot;) {
+                        console.log(message[&quot;cyan&quot;]);
+                    } else {
+                        console.log(message.cyan);
+                    }
+                },
+                logWorkerFork: function (message) {
+                    if (typeof message === &quot;string&quot;) {
+                        console.log(message[&quot;cyan&quot;]);
+                    } else {
+                        console.log(message.cyan);
+                    }
+                },
+                logWorkerListen: function (message) {
+                    if (typeof message === &quot;string&quot;) {
+                        console.log(message[&quot;cyan&quot;][&quot;bgYellow&quot;]);
+                    } else {
+                        console.log(message.cyan);
+                    }
+                },
+                logEvent: function (message) {
+                    Nodext.logMsg(message, &quot;yellow&quot;);
+                },
+                logWarn: function (message) {
+                    Nodext.logMsg(message, &quot;yellow&quot;);
+                },
+                logDestroy: function (message) {
+                    if (typeof message === &quot;string&quot;) {
+                        console.log(message.bgGreen.white);
+                    } else {
+                        console.log(message);
+                    }
+                },
+                logError: function (message) {
+                    if (typeof message === &quot;string&quot;) {
+                        console.log(message.bgRed.white);
+                    } else {
+                        console.log(message);
+                    }
+                },
+            });
+        } else {
+            Nodext.apply(Nodext, {
+                trace: function (message, color) {
+                    console.trace(message);
+                },
+                logMsg: function (message, color) {
+                    console.log(message);
+                },
+                logEvent: function (message) {
+                    Nodext.logMsg(message, &quot;yellow&quot;);
+                },
+                logDestroy: function (message) {
+                    console.log(message);
+                },
+                logError: function (message) {
+                    console.log(message);
+                },
+                logPid: function () {
+                    console.log(&quot;run in Pid :&quot; + process.pid);
+                },
+            });
+        }
+    }
+});</pre>
+</body>
+</html>

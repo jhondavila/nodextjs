@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-database-query-Object'>/**
+</span> * 
+ * Las consultas de tipo seleccion generan un QueryObject el cual mantiene todas
+ * las configuraciones pasadas al querybuilder para despues ser compiladas.
+ * 
+ */
+Nodext.define(&quot;Nodext.database.query.Object&quot;, {
+    extend: &quot;Ext.Base&quot;,
+<span id='Nodext-database-query-Object-property-S-configPrefixed'>    $configPrefixed: false,
+</span><span id='Nodext-database-query-Object-property-select'>    /**
+</span>     * @property {Array[]/String[]/Object[]} select
+     *  
+     * ## Ejemplo #1
+     * 
+     * Consulta basica con select: 
+     * 
+     *     var qObj = new Nodext.database.query.Object({
+     *       select: [
+     *           &quot;id_app,name&quot;
+     *       ],
+     *       from: &quot;core.app&quot;
+     *     });
+     *     // SELECT &quot;id_app&quot;, &quot;name&quot; FROM &quot;core&quot;.&quot;app&quot;
+     * 
+     * ## Ejemplo #2
+     * 
+     * Ejemplo de select con columnas separadas por un delimitador &quot;,&quot;.
+     * 
+     * Tambien se puede apreciar un arreglo el cual contiene las columnas 4 y 5.
+     * 
+     *     var qObj = new Nodext.database.query.Object({
+     *       select: [
+     *           &quot;id_app&quot;,
+     *           &quot;name,icon_cls&quot;,
+     *           [&quot;cfg,swt_status&quot;]
+     *           //[&quot;*&quot;] todas las columnas
+     *       ],
+     *       from: &quot;core.app&quot;
+     *     });
+     *     // SELECT &quot;id_app&quot;, &quot;name&quot;, &quot;icon_cls&quot;, &quot;cfg&quot;, &quot;swt_status&quot; 
+     *     // FROM &quot;core&quot;.&quot;app&quot;
+     * 
+     * ## Ejemplo #3
+     * 
+     * Cuando se especifica un {@link Array} este puede contener:
+     * 
+     *  - `Columnas {String}`
+     *  - `Proteger identificadores {Boolean}`
+     *  - `Separator {String}` 
+     * 
+     * Se puede apreciar un claro ejemplo a continuacion:
+     * 
+     *     var qObj = new Nodext.database.query.Object({
+     *             select : [
+     *                  [&quot;id_app,name&quot;,true],
+     *                  [&quot;alias,icon_cls&quot;,false],
+     *                  //cuando el segundo parametro el el arreglo es false, no se escapa los valore.
+     *                  [&quot;cfg;swt_delete&quot;,true,&quot;;&quot;] 
+     *             ],
+     *             from : &quot;core.app&quot;
+     *     });
+     *     //SELECT &quot;id_app&quot;, &quot;name&quot;, alias, icon_cls, &quot;cfg&quot;, &quot;swt_delete&quot; 
+     *     //FROM &quot;core&quot;.&quot;app&quot;
+     * 
+     *  **Note:** Cuando el protector de identificadores es false, la columna pasada no sera evaluada,
+     *  por lo tanto su valor no sera protegido.En este ejemplo se puede apreciar que las columnas 3 y 4 no se encuentran encomilladas.
+     * 
+     * ## Ejemplo #4
+     * 
+     * ### Funciones Sum,Max,Min,Avg 
+     * 
+     *     var qObj = new Nodext.database.query.Object({
+     *       select: [
+     *           {
+     *               type: &quot;max&quot;,
+     *               col: &quot;id_app&quot;,
+     *               alias: &quot;max_id_app&quot;,
+     *               escape: false
+     *           },
+     *           {
+     *               type: &quot;min&quot;,
+     *               col: &quot;id_app&quot;,
+     *               alias: &quot;min_id_app&quot;,
+     *               escape: true
+     *           },
+     *           {
+     *               type: &quot;avg&quot;,
+     *               col: &quot;id_app&quot;
+     *           },
+     *           {
+     *               type: &quot;sum&quot;,
+     *               col: &quot;id_app&quot;,
+     *               alias : &quot;sum_id_app&quot;
+     *           }
+     *       ],
+     *       from: &quot;core.app&quot;
+     *     });
+     *     //SELECT MAX(id_app) AS max_id_app, MIN(&quot;id_app&quot;) AS &quot;min_id_app&quot;,
+     *     //AVG(&quot;id_app&quot;) AS &quot;id_app&quot;, SUM(&quot;id_app&quot;) AS &quot;id_app&quot;
+     *     //FROM &quot;core&quot;.&quot;app&quot;
+     * 
+     * 
+     * 
+     * 
+     * ## Ejemplo #5
+     * 
+     * Cuando se añade un {@link Object} podemos especificar el tipo de select a utilizar con la propiedad &quot;type&quot;:
+     * 
+     *  - `select o subselect`
+     *  - `case`
+     *  - `template` 
+     * 
+     * ### Subselect
+     * Ejemplo de type select/subselect:
+     * 
+     *     var qObj = new Nodext.database.query.Object({
+     *       select: [
+     *           [&quot;id_app,name&quot;],
+     *           {
+     *               type: &quot;select&quot;, // select|subselect
+     *               alias: &quot;id_node_parent&quot;,
+     *               select: [&quot;parent_node_k&quot;],
+     *               from: &quot;core.node_tree&quot;,
+     *               where: [
+     *                   {
+     *                       field: &quot;child_node_k&quot;,
+     *                       value: &quot;core.app.id_app&quot;,
+     *                       escape: false
+     *                   },
+     *                   {
+     *                       field : &quot;child_node_k&quot;,
+     *                       value : 0
+     *                   }
+     *               ]
+     *           }
+     *       ],
+     *       from: &quot;core.app&quot;,
+     *       where: {
+     *           swt_status: 0
+     *       }
+     *     });
+     *     // select &quot;id_app&quot;,&quot;name&quot;,
+     *     // (select &quot;parent_node_k&quot; from &quot;node_tree&quot; where &quot;child_node&quot; = &quot;app&quot;.&quot;id_node&quot; and &quot;path_length&quot; = &#39;0&#39;) as id_node_parent
+     *     // from &quot;app&quot; where &quot;swt_status&quot; = &#39;0&#39;
+     * 
+     * ### Select Case 
+     * Ejemplo de type case:
+     * 
+     *     var qObj = new Nodext.database.query.Object({
+     *       select: [
+     *           [&quot;id_app,name&quot;],
+     *           {
+     *               type: &quot;case&quot;,
+     *               alias: &quot;estado&quot;,
+     *               conditions: [
+     *                   {
+     *                       when: &quot;swt_status ::integer &gt; 0&quot;,
+     *                       then: &quot;&#39;Activo&#39;&quot;
+     *                   },
+     *                   {
+     *                       when: &quot;id_app &gt; 0 and id_app &lt; 100 and swt_status ::integer &gt; 0&quot;,
+     *                       then: &quot;&#39;Sys.Activo&#39;&quot;
+     *                   }
+     *               ],
+     *               default: {
+     *                   then: &quot;&#39;Deshabilitado&#39;&quot;
+     *               },
+     *           }
+     *       ],
+     *       from: &quot;core.app&quot;,
+     *       where: {
+     *           swt_status: 0
+     *       }
+     *     });
+     *     //SELECT 
+     *     //&quot;id_app&quot;, &quot;name&quot;, 
+     *     //CASE 
+     *     //  WHEN &quot;swt_status&quot; ::integer &gt; 0 THEN &#39;Activo&#39; 
+     *     //  WHEN &quot;id_app&quot; &gt; 0 and &quot;id_app&quot; &lt; &#39;100&#39; and &quot;swt_status&quot; ::integer &gt; 0 THEN &#39;Sys.Activo&#39; 
+     *     //  ELSE &#39;Deshabilitado&#39; 
+     *     //END estado 
+     *     //FROM &quot;core&quot;.&quot;app&quot; 
+     *     //WHERE &quot;swt_status&quot; = &#39;0&#39;
+     *
+     * ### Select Template 
+     * Las configuraciones que se le pueden pasar a tipo template son las siguientes:
+     *
+     *  - `tpl - Nos permite definir una cadena tokenizada. Cada token debe ser único y debe incrementarse en el formato {0}, {1}, etc.`
+     *  - `replace - Definimos los valores a reemplzar en la cadena tokenizada´ con un objeto con propiedades numericas incrementandose (0,1,2,3,...)`
+     * 
+     * Ejemplo de type template
+     * 
+     *     var qObj = new Nodext.database.query.Object({
+     *       select: [
+     *           &quot;id_app,name&quot;,
+     *           {
+     *               type: &quot;template&quot;,
+     *               tpl: &quot;{0},{1}&quot;,
+     *               replace: {
+     *                   0: {
+     *                       columns: [
+     *                           &quot;icon_cls&quot;
+     *                       ]
+     *                   },
+     *                   1: {
+     *                       columns: [
+     *                           &quot;cfg,swt_status&quot;
+     *                       ]
+     *                   }
+     *               }
+     *           },
+     *           {
+     *               type: &quot;template&quot;,
+     *               tpl: &quot;({0}) as parent_node_k&quot;,
+     *               replace: {
+     *                   0: {
+     *                       type: &quot;select&quot;,
+     *                       select: [&quot;parent_node_k&quot;],
+     *                       from: &quot;core.node_tree&quot;,
+     *                       where: [
+     *                           {
+     *                               field: &quot;child_node_k&quot;,
+     *                               value: &quot;core.app.id_app&quot;,
+     *                               escape: false
+     *                           },
+     *                           {
+     *                               field: &quot;child_node_k&quot;,
+     *                               value: 0
+     *                           }
+     *                       ]
+     *                   }
+     *               }
+     *           }
+     *       ],
+     *       from: &quot;core.app&quot;
+     *     });
+     *     //SELECT &quot;id_app&quot;, &quot;name&quot;, &quot;icon_cls&quot;,&quot;cfg&quot;, &quot;swt_status&quot;, 
+     *     //(SELECT &quot;parent_node_k&quot; FROM &quot;core&quot;.&quot;node_tree&quot; WHERE child_node_k = core.app.id_app AND &quot;child_node_k&quot; = &#39;0&#39;) as parent_node_k 
+     *     //FROM &quot;core&quot;.&quot;app&quot;
+     * 
+     */
+    select: undefined,
+<span id='Nodext-database-query-Object-property-from'>    /**
+</span>     * @property {String/Object/String[]}
+     * 
+     * ## Ejemplo #1
+     * 
+     * Consulta basica con from: 
+     * 
+     *     var qObj = new Nodext.database.query.Object({
+     *       select: [
+     *           &quot;*&quot;
+     *       ],
+     *       from: &quot;core.app&quot;
+     *     });
+     *     // SELECT * FROM &quot;core&quot;.&quot;app&quot;
+     * 
+     * ## Ejemplo #2
+     * 
+     * Consulta multple from: 
+     * 
+     *     var qObj = new Nodext.database.query.Object( {
+     *           select: [&quot;*&quot;],
+     *           from: [&quot;core.app&quot;,&quot;core.node_tree&quot;],
+     *           where: [
+     *               {
+     *                   field : &quot;id_app &quot;,
+     *                   value : &quot;child_node_k&quot;,
+     *                   escape : false
+     *               },
+     *               {
+     *                   field : &quot;path_length&quot;,
+     *                   value : 1
+     *               }
+     *           ]
+     *       });
+     *     // SELECT * FROM &quot;core&quot;.&quot;app&quot;, &quot;core&quot;.&quot;node_tree&quot; WHERE id_app = child_node_k AND &quot;path_length&quot; = &#39;1&#39;
+     * 
+     * 
+     * ## Ejemplo #3
+     * Consulta multple fromselect: 
+     * 
+     *     var qObj = new Nodext.database.query.Object( {
+     *       select: [&quot;*&quot;],
+     *       from: {
+     *           type : &quot;select&quot;,
+     *           alias : &quot;my_table&quot;,
+     *           select : [&quot;id_app,name,icon_cls&quot;],
+     *           from : &quot;core.app&quot;
+     *       }
+     *     });
+     *     // SELECT * FROM (SELECT &quot;id_app&quot;, &quot;name&quot;, &quot;icon_cls&quot; FROM &quot;core&quot;.&quot;app&quot;) as &quot;my_table&quot;
+     *  
+     *
+     * ## Ejemplo #3
+     * Consulta multple frompivot basic: 
+     * 
+     *     var qObj = new Nodext.database.query.Object({
+     *               type: &quot;pivot&quot;,
+     *               data: {
+     *                   select: [&quot;rowid, attribute, value&quot;],
+     *                   from: &quot;ct&quot;,
+     *                   where: [
+     *                       {
+     *                           field: &quot;attribute&quot;,
+     *                           value: &quot;att2&quot;
+     *                       },
+     *                       {
+     *                           type: &quot;or_where&quot;,
+     *                           field: &quot;attribute&quot;,
+     *                           value: &quot;att3&quot;
+     *                       }
+     *                   ]
+     *               },
+     *               output: {
+     *                   row_name: &quot;text&quot;,
+     *                   category_1: &quot;text&quot;,
+     *                   category_2: &quot;text&quot;,
+     *                   category_3: &quot;text&quot;
+     *               }
+     *     });
+     *     //SELECT * FROM 
+     *     //crosstab (
+     *     //$$ SELECT &quot;rowid&quot;, &quot;attribute&quot;, &quot;value&quot; FROM &quot;ct&quot; WHERE &quot;attribute&quot; = &#39;att2&#39; OR &quot;attribute&quot; = &#39;att3&#39; $$)
+     *     //as ct (&quot;row_name&quot; text,&quot;category_1&quot; text,&quot;category_2&quot; text,&quot;category_3&quot; text)
+     *
+     * Consulta multple frompivot with cols: 
+     * 
+     *     var qObj = new Nodext.database.query.Object({
+     *           select: [&quot;*&quot;],
+     *           from: {
+     *               type: &quot;pivot&quot;,
+     *               alias: &quot;ct&quot;,
+     *               data: {
+     *                   select: [&quot;year,month,qty&quot;],
+     *                   from: &quot;public.sales&quot;
+     *               },
+     *               cols: {
+     *                   select: [&quot;m&quot;],
+     *                   from: [
+     *                       [&quot;generate_series(1,12) m&quot;, true, &#39;;&#39;]
+     *                   ]
+     *               },
+     *               output: {
+     *                   year: &quot;integer&quot;,
+     *                   &quot;Jan&quot;: &quot;integer&quot;,
+     *                   &quot;Feb&quot;: &quot;integer&quot;,
+     *                   &quot;Mar&quot;: &quot;integer&quot;,
+     *                   &quot;Apr&quot;: &quot;integer&quot;,
+     *                   &quot;May&quot;: &quot;integer&quot;,
+     *                   &quot;Jun&quot;: &quot;integer&quot;,
+     *                   &quot;Jul&quot;: &quot;integer&quot;,
+     *                   &quot;Aug&quot;: &quot;integer&quot;,
+     *                   &quot;Sep&quot;: &quot;integer&quot;,
+     *                   &quot;Oct&quot;: &quot;integer&quot;,
+     *                   &quot;Nov&quot;: &quot;integer&quot;,
+     *                   &quot;Dec&quot;: &quot;integer&quot;
+     *               }
+     *           }
+     *      });
+     *     //SELECT * FROM crosstab 
+     *     //($$ SELECT &quot;year&quot;, &quot;month&quot;, &quot;qty&quot; FROM &quot;public&quot;.&quot;sales&quot; $$, $$SELECT &quot;m&quot; FROM generate_series(1,12) &quot;m&quot;$$) as ct 
+     *     //(&quot;year&quot; integer,&quot;Jan&quot; integer,&quot;Feb&quot; integer,&quot;Mar&quot; integer,&quot;Apr&quot; integer,&quot;May&quot; integer,&quot;Jun&quot; integer,&quot;Jul&quot; integer,
+     *     //&quot;Aug&quot; integer,&quot;Sep&quot; integer,&quot;Oct&quot; integer,&quot;Nov&quot; integer,&quot;Dec&quot; integer)
+     *
+     * 
+     */
+    from: undefined,
+<span id='Nodext-database-query-Object-property-where'>    /**
+</span>     * @property {Object/Array[]/Object[]}
+     */
+    where: undefined,
+<span id='Nodext-database-query-Object-property-join'>    /**
+</span>     * @property {Array[]}
+     */
+    join: undefined,
+<span id='Nodext-database-query-Object-property-distinct'>    /**
+</span>     * @property {Boolean}
+     */
+    distinct: undefined,
+<span id='Nodext-database-query-Object-property-start'>    /**
+</span>     * @property {Number}
+     */
+    start: undefined,
+<span id='Nodext-database-query-Object-property-limit'>    /**
+</span>     * @property {Number}
+     */
+    limit: undefined,
+<span id='Nodext-database-query-Object-property-group_by'>    /**
+</span>     * @property {Array/Array[]}
+     */
+    group_by: undefined,
+<span id='Nodext-database-query-Object-property-order_by'>    /**
+</span>     * @property {Array/Array[]}
+     */
+    order_by: undefined,
+<span id='Nodext-database-query-Object-method-constructor'>    constructor: function (cfg) {
+</span>        Nodext.apply(this, cfg || {});
+        this.QB = {
+            &#39;qb_select&#39;: [],
+            &#39;qb_from&#39;: [],
+            &#39;qb_join&#39;: [],
+            &#39;qb_where&#39;: [],
+            &#39;qb_groupby&#39;: [],
+            &#39;qb_having&#39;: [],
+            &#39;qb_orderby&#39;: [],
+            &#39;qb_aliased_tables&#39;: [],
+            &#39;qb_no_escape&#39;: [],
+            &#39;qb_distinct&#39;: false,
+            &#39;qb_limit&#39;: false,
+            &#39;qb_offset&#39;: false,
+            &#39;qb_where_group_started&#39;: false,
+            &#39;qb_where_group_count&#39;: false,
+            &#39;qb_caching&#39;: false,
+            &#39;qb_cache_having&#39;: [],
+            &#39;qb_cache_where&#39;: [],
+            &#39;qb_set&#39;: [],
+            &#39;qb_keys&#39;: []
+        };
+    },
+<span id='Nodext-database-query-Object-method-destroy'>    destroy: function () {
+</span>        this.callParent();
+        Nodext.destroyArray(this.QB.qb_select, this.QB.qb_from, this.QB.qb_join, this.QB.qb_where, this.QB.qb_groupby, this.QB.qb_having, this.QB.qb_orderby);
+        Nodext.destroyArray(this.QB.qb_aliased_tables, this.QB.qb_no_escape, this.QB.qb_cache_having, this.QB.qb_cache_where, this.QB.qb_set, this.QB.qb_keys, this.QB.qb_keys_string);
+        Nodext.destroyClass(this);
+        delete this;
+    }
+});</pre>
+</body>
+</html>

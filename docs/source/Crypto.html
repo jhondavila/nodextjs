@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-module-Crypto'>/**
+</span> * 
+ */
+Nodext.define(&quot;Nodext.module.Crypto&quot;, {
+    extend: &quot;Ext.Base&quot;,
+<span id='Nodext-module-Crypto-property-S-configPrefixed'>    $configPrefixed: false,
+</span>    alternateClassName: [&quot;Nodext.Crypto&quot;],
+    singleton: true,
+<span id='Nodext-module-Crypto-property-crypto'>    /**
+</span>     * @property {NodeModule} crypto
+     */
+    crypto: null,
+<span id='Nodext-module-Crypto-method-constructor'>    constructor: function (cfg) {
+</span>        Nodext.apply(this, cfg || {});
+        this.crypto = require(&#39;crypto&#39;);
+        this.initConfig();
+    },
+<span id='Nodext-module-Crypto-method-createHashMD5'>    createHashMD5: function (string) {
+</span>        return this.crypto.createHash(&quot;md5&quot;).update(string).digest(&quot;hex&quot;);
+    }
+
+});</pre>
+</body>
+</html>

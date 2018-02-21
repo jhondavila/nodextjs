@@ -1,0 +1,123 @@
+[
+    {
+        "name": "init",
+        "load": true,
+        "items": [
+            "/overrides/InitVars.js",
+            "/ext/src/core/Boot.js",
+            "/ext/src/core/Ext.js",
+            "/src/Nodext.js"
+        ]
+    },
+    {
+        "name": "function",
+        "load": true,
+        "items": [
+            "/ext/src/core/lang/Error.js",
+            "/ext/src/core/lang/Array.js",
+            "/ext/src/core/lang/Assert.js",
+            "/ext/src/core/lang/String.js",
+            "/ext/src/core/lang/Date.js",
+            "/ext/src/core/lang/Function.js",
+            "/ext/src/core/lang/Number.js",
+            "/ext/src/core/lang/Object.js"
+        ]
+    },
+    {
+        "name": "util",
+        "load": true,
+        "items": [
+            "/ext/src/core/Util.js",
+            "/ext/src/core/util/Version.js"
+        ]
+    },
+    {
+        "name": "class",
+        "load": true,
+        "items": [
+            "/ext/src/core/class/Config.js",
+            "/ext/src/core/class/Configurator.js",
+            "/ext/src/core/class/Base.js",
+            "/ext/src/core/util/Cache.js",
+            "/ext/src/core/class/Class.js",
+            "/ext/src/core/class/Inventory.js",
+            "/ext/src/core/class/ClassManager.js",
+            "/ext/src/core/mixin/Factoryable.js"
+        ]
+    },
+    {
+        "name": "browser",
+        "load": true,
+        "items": [
+            "/ext/src/core/env/Ready.js",
+            "/ext/src/core/class/Loader.js"
+        ]
+    },
+    {
+        "name": "observable",
+        "load": true,
+        "items": [
+            "/ext/src/core/class/Mixin.js",
+            "/ext/src/core/util/DelayedTask.js",
+            "/ext/src/core/util/Event.js",
+            "/ext/src/core/mixin/Identifiable.js",
+            "/ext/src/core/mixin/Observable.js",
+            "/ext/src/core/util/Observable.js"
+        ]
+    },
+    {
+        "name": "mixedCollection",
+        "load": true,
+        "items": [
+            "/ext/src/core/util/Filter.js",
+            "/ext/src/core/util/AbstractMixedCollection.js",
+            "/ext/src/core/util/Sorter.js",
+            "/ext/src/core/util/Sortable.js",
+            "/ext/src/core/util/MixedCollection.js"
+        ]
+    },
+    {
+        "name": "task",
+        "load": true,
+        "items": [
+            "/ext/src/core/util/TaskRunner.js",
+            "/ext/src/core/util/TaskManager.js"
+        ]
+    },
+    {
+        "name": "event",
+        "load": true,
+        "items": [
+            "/ext/src/core/app/Util.js",
+            "/ext/src/core/app/EventDomain.js",
+            "/ext/src/core/app/EventBus.js",
+            "/src/GlobalEvents.js"
+        ]
+    },
+    {
+        "name": "format",
+        "load": true,
+        "items": [
+            "/ext/src/core/util/Format.js",
+            "/ext/src/core/Template.js"
+        ]
+    },
+    {
+        "name": "utilcollection",
+        "load": true,
+        "items": [
+            "/ext/src/core/util/Grouper.js",
+            "/ext/src/core/util/CollectionKey.js",
+            "/ext/src/core/util/Collection.js",
+            "/ext/src/core/util/SorterCollection.js",
+            "/ext/src/core/util/FilterCollection.js",
+            "/ext/src/core/util/Group.js",
+            "/ext/src/core/util/GroupCollection.js",
+            "/overrides/Override.js",
+            "/src/JSON.js",
+            "/src/NodextPath.js",
+            "/src/database/Manager.js",
+            "/src/NodextReady.js"
+        ]
+    }
+]

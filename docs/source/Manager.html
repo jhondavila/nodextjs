@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-database-Manager'>/**
+</span> * 
+ */
+Nodext.define(&quot;Nodext.database.Manager&quot;, {
+    extend: &#39;Ext.Base&#39;,
+    uses: [
+        // &quot;Nodext.database.*&quot;
+        &quot;Nodext.database.*&quot;
+    ],
+    alternateClassName: [&quot;Nodext.db.Manager&quot;, &quot;Nodext.db.Mgr&quot;],
+<span id='Nodext-database-Manager-property-S-configPrefixed'>    $configPrefixed: false,
+</span><span id='Nodext-database-Manager-property-S-configStrict'>    $configStrict: false,
+</span>    singleton: true,
+    config: {
+<span id='Nodext-database-Manager-cfg-fileCfg'>        fileCfg: &quot;database.json&quot;,
+</span><span id='Nodext-database-Manager-cfg-listCnx'>        listCnx: null,
+</span><span id='Nodext-database-Manager-cfg-drivers'>        drivers: null
+</span>    },
+<span id='Nodext-database-Manager-method-constructor'>    constructor: function (config) {
+</span>        config = config || {};
+        Nodext.apply(this, config);
+        this.initConfig();
+        this.callParent(arguments);
+        this.listCnx = {};
+    },
+<span id='Nodext-database-Manager-method-loadCnx'>    loadCnx: function (appNode) {
+</span>        var json = appNode.Global.getFileCfg(this.fileCfg);
+        if (!json) {
+            return false;
+        }
+        if (!Nodext.isMaster() &amp;&amp; json.workers) {
+            var defaults = json.defaults || [];
+            var cfg = json.workers[Nodext.idWorker] || json.workers[Nodext.internalId] || [];
+            if (!Array.isArray(cfg)) {
+                cfg = [cfg];
+            }
+            cfg = cfg.concat(defaults);
+            json = cfg;
+        }
+        var GlobalDBActive = appNode.Global.cfgDBActive;
+        this.buildConnection(json, GlobalDBActive);
+    },
+<span id='Nodext-database-Manager-method-addConnection'>    addConnection: function (cfg, GlobalDBActive) {
+</span>        this.buildConnection(cfg, GlobalDBActive);
+    },
+<span id='Nodext-database-Manager-method-getQBInst'>    getQBInst: function (inst) {
+</span>        inst = inst || { error: true };
+        var cnx = this.listCnx[inst.DBcnxName];
+        if (cnx) {
+            return cnx.qb;
+        } else {
+            inst.error ? Nodext.logError(&quot;No found parameter inst(instance)&quot;) : inst.sendError({
+                message: &quot;No found connection Database&quot;
+            });
+            return;
+        }
+    },
+<span id='Nodext-database-Manager-method-getQB'>    getQB: function (cnxName) {
+</span>        var cnx = this.listCnx[cnxName];
+        if (cnx) {
+            return cnx.qb;
+        } else {
+            return null;
+        }
+    },
+<span id='Nodext-database-Manager-method-getCnx'>    getCnx: function (cnxName) {
+</span>        if (this.listCnx[cnxName]) {
+            return this.listCnx[cnxName];
+        } else {
+            return null;
+        }
+    },
+<span id='Nodext-database-Manager-method-buildConnection'>    buildConnection: function (config, GlobalDBActive) {
+</span>        var me = this;
+        if (!Nodext.isArray(config)) {
+            config = [config];
+        }
+        var newConfig, driverName, connection, nameConnection;
+        Nodext.Array.each(config, function (item) {
+            // console.log(item);
+            newConfig = null;
+            if (item.db &amp;&amp; item.active_group &amp;&amp; item.db[item.active_group]) {
+                newConfig = item.db[item.active_group];
+            } else if (item.db &amp;&amp; !item.active_group &amp;&amp; item.db[&quot;default&quot;]) {
+                newConfig = item.db[&quot;default&quot;];
+            } else if (item.db &amp;&amp; !item.active_group &amp;&amp; item.db[GlobalDBActive]) {
+                newConfig = item.db[GlobalDBActive];
+            } else if (!item.db) {
+                newConfig = item;
+            } else {
+                Nodext.logError(&quot;No se puedo encontrar su configuracion de la base de datos&quot;);
+            }
+            if (!!newConfig) {
+                driverName = newConfig.dbdriver;
+                nameConnection = item.nameConnection || newConfig.database;
+                Ext.apply(newConfig, {
+                    nameConnection: nameConnection
+                });
+                Nodext.database.Connection.create(newConfig);
+            }
+        });
+    },
+<span id='Nodext-database-Manager-method-addListCnx'>    addListCnx: function (name, connection) {
+</span>        this.listCnx[name] = connection;
+    }
+});</pre>
+</body>
+</html>

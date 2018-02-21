@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-util-MapClass'>/**
+</span> * 
+ */
+Nodext.define(&quot;Nodext.util.MapClass&quot;, {
+    extend: &quot;Ext.Mixin&quot;,
+    config: {
+<span id='Nodext-util-MapClass-cfg-clsManager'>        clsManager: null
+</span>    },
+<span id='Nodext-util-MapClass-property-mixinConfig'>    mixinConfig: {
+</span>        id: &#39;mapclass&#39;
+    },
+<span id='Nodext-util-MapClass-method-constructor'>    constructor: function (config) {
+</span>        this.setClsManager({});
+    },
+<span id='Nodext-util-MapClass-method-addMapClsManager'>    /**
+</span>     * @method
+     * @private
+     * Añade al mapeo de managers un nuevo elemento mediante una alias.
+     */
+    addMapClsManager: function (groupAlias, clsMgr) {
+        var clsManager = this.getClsManager();
+        if (!clsManager[groupAlias]) {
+            clsManager[groupAlias] = clsMgr;
+        } else {
+            Nodext.logError(&quot;Alias para administrador de clases duplicado : &quot; + groupAlias);
+        }
+    },
+<span id='Nodext-util-MapClass-method-getClassOfMgr'>    /**
+</span>     * @method
+     */
+    getClassOfMgr: function (manager, clsName) {
+        var clsManager = this.clsManager[manager], cls;
+        if (clsManager) {
+            cls = clsManager.getClsByKey(clsName);
+        }
+        return cls;
+    },
+});</pre>
+</body>
+</html>

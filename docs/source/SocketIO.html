@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-socket-IO-SocketIO'>/**
+</span> * 
+ */
+Nodext.define(&quot;Nodext.socket.IO.SocketIO&quot;, {
+    extend: &quot;Nodext.BaseConfig&quot;,
+    mixins: [
+        &quot;Ext.util.Observable&quot;,
+        &quot;Nodext.util.MapClass&quot;,
+        &quot;Nodext.model.Mixin&quot;
+    ],
+    requires: [
+        &quot;Nodext.socket.IO.Redis&quot;,
+        &quot;Nodext.socket.IO.Manager&quot;
+    ],
+<span id='Nodext-socket-IO-SocketIO-property-S-configPrefixed'>    $configPrefixed: false,
+</span><span id='Nodext-socket-IO-SocketIO-property-S-configStrict'>    $configStrict: false,
+</span>    config: {
+<span id='Nodext-socket-IO-SocketIO-cfg-fileCfg'>        /**
+</span>         * nombre del archivo de configuración
+         */
+        fileCfg: &quot;socketIO.json&quot;,
+<span id='Nodext-socket-IO-SocketIO-cfg-redis'>        /**
+</span>         * @cfg {Boolean|Object}
+         * Habilita el uso de redis
+         */
+        redis: false,
+<span id='Nodext-socket-IO-SocketIO-cfg-socketPort'>        /**
+</span>         * Puerto que escuchara los clientes
+         */
+        socketPort: 3000,
+<span id='Nodext-socket-IO-SocketIO-cfg-safeMode'>        /**
+</span>         * Habilita el modo seguro en caso de que el servidor redis no se encuentre disponible
+         */
+        safeMode: true,
+<span id='Nodext-socket-IO-SocketIO-cfg-server'>        server: null,
+</span><span id='Nodext-socket-IO-SocketIO-cfg-socketMgr'>        socketMgr: null,
+</span><span id='Nodext-socket-IO-SocketIO-cfg-modelMgr'>        modelMgr: true
+</span>    },
+<span id='Nodext-socket-IO-SocketIO-property-socketIO'>    /**
+</span>     * @property {NodeModule} socketIO
+     * Carga la libreria socket.io de NodeJs, esta libreria nos permite realizar actividades a tiempo real
+     */
+    socketIO: null,
+<span id='Nodext-socket-IO-SocketIO-property-http'>    /**
+</span>    * @property {NodeModule} http
+    * Carga la Libreria http de NodeJS.
+    */
+    http: null,
+<span id='Nodext-socket-IO-SocketIO-property-io'>    /**
+</span>     * @property {NodeInstance}
+     * Instancia del modulo socket.io
+     */
+    io: null,
+<span id='Nodext-socket-IO-SocketIO-property-listenMessage'>    /**
+</span>     * @property
+     * @private
+     * Mensaje del listen
+     */
+    listenMessage: &quot;&quot;,
+<span id='Nodext-socket-IO-SocketIO-property-typeMode'>    /**
+</span>     * @property
+     * @private
+     * El modo en el cual se ejecuta el socketIo puede ser NormalMode,RedisMode,SafeMode
+     */
+    typeMode: &quot;&quot;,
+<span id='Nodext-socket-IO-SocketIO-property-initSafe'>    /**
+</span>     * @property
+     * true cuando se inicia el modo seguro
+     */
+    initSafe: false,
+<span id='Nodext-socket-IO-SocketIO-method-constructor'>    constructor: function (config) {
+</span>        this.callParent(arguments);
+        this.mixins.observable.constructor.call(this, config);
+        this.mixins.mapclass.constructor.call(this, config);
+        this.mixins.modelmgr.constructor.call(this);
+        try {
+            this.socketIO = require(&#39;socket.io&#39;);
+            this.overrideIO();
+        } catch (e) {
+            this.socketIO = null;
+            Nodext.logError(&quot;No se encontro el modulo socket.io&quot;);
+        }
+        this.fnListen = this.listenMessage.bind(this);
+        process.on(&#39;message&#39;, this.fnListen);
+    },
+
+<span id='Nodext-socket-IO-SocketIO-method-formatCfg'>    /**
+</span>    * @method formatCfg
+    * @private
+    * Obtiene las configuraciones y las formatea de acuerdo al tipo de proceso (Maestro o Worker).
+    */
+    formatCfg: function (config) {
+        var json = this.appNode.Global.getFileCfg(config.fileCfg || this.fileCfg);
+        if (Nodext.isObject(json.defaults)) {
+            Nodext.apply(json, json.defaults);
+        }
+        Nodext.apply(config, json);
+        return config;
+    },
+<span id='Nodext-socket-IO-SocketIO-method-listenMessage'>    /**
+</span>     * @method
+     * Escucha los eventos resetworker y stopworker que provienen del proceso maestro
+     * @private
+     */
+    listenMessage: function (message) {
+        if (message.from === &quot;Nodext.Cluster&quot;) {
+            if (message.event === &quot;resetworker&quot;) {
+                this.closeWorker.apply(this, message.params);
+            } else if (message.event === &quot;stopworker&quot;) {
+                this.closeWorker.apply(this, message.params);
+            }
+        }
+    },
+<span id='Nodext-socket-IO-SocketIO-method-closeWorker'>    /**
+</span>     * @method
+     * Cierra las atenciones socket.io
+     * @private
+     */
+    closeWorker: function () {
+        if (Nodext.AppMetricsDash) {
+            Nodext.AppMetricsDash.monitoring.removeAllListeners();
+        }
+        this.io.close = function (fn) {
+            for (var id in this.nsps[&#39;/&#39;].sockets) {
+                if (this.nsps[&#39;/&#39;].sockets.hasOwnProperty(id)) {
+                    this.nsps[&#39;/&#39;].sockets[id].onclose();
+                }
+            }
+            this.engine.close();
+            if (this.httpServer) {
+                this.httpServer.close(fn);
+            }
+        };
+        this.io.close(function () {
+            Nodext.IPC.setCloseSocketIO(true);
+            process.send({ ename: &quot;socketioserverclose&quot;, params: [Nodext.GlobalCfg.idCluster, Nodext.GlobalCfg.idWorker] });
+            Nodext.logEvent(&quot;Server SocketIO Close&quot;);
+        });
+    },
+<span id='Nodext-socket-IO-SocketIO-method-configSocketManager'>    configSocketManager: function () {
+</span>        this.socketMgr = this.socketMgr || {};
+        Nodext.apply(this.socketMgr, {
+            appNode: this.appNode,
+            socketIO: this,
+            io: this.io
+        });
+        var groupAlias = this.socketMgr.groupAlias || &quot;sockets&quot;;
+        if (!(this.socketMgr instanceof Nodext.socket.IO.Manager)) {
+            this.socketMgr = Nodext.create(&quot;Nodext.socket.IO.Manager&quot;, this.socketMgr);
+            if (!this.socketMgr.autoLoad) {
+                this.socketMgr.start();
+            }
+        }
+        this.addMapClsManager(groupAlias, this.socketMgr);
+    },
+<span id='Nodext-socket-IO-SocketIO-method-listen'>    /**
+</span>     * @method
+     * Inicia el soporte SocketIO
+     */
+    listen: function () {
+        if (!this.server || this.redis !== false) {
+            this.server = Nodext.create(&quot;Nodext.http.Base&quot;, {
+                fileCfg: false
+            });
+            this.server.on(&quot;error&quot;, this.errorSrv);
+        }
+        this.io = this.socketIO(this.server.srv);
+        this.configSocketManager();
+        if (this.redis === false || this.redis &amp;&amp; Nodext.isMaster()) {
+            this.typeMode = &quot;NormalMode&quot;;
+            this.listenMessage = &quot;Listen Port : &quot; + this.socketPort;
+            this.initListen(this.socketPort);
+        } else {
+            if (!(this.redis instanceof Nodext.socket.IO.Redis)) {
+                this.redis = Nodext.create(&quot;Nodext.socket.IO.Redis&quot;, this.redis);
+            }
+            this.redis.on({
+                fail: &#39;onFailRedis&#39;,
+                success: &#39;onSuccessRedis&#39;,
+                scope: this
+            });
+            this.redis.connect();
+        }
+    },
+<span id='Nodext-socket-IO-SocketIO-method-errorSrv'>    /**
+</span>     * @method
+     * @private
+     * @param {Object} error
+     */
+    errorSrv: function (e) {
+        if (e.code === &#39;EADDRINUSE&#39;) {
+            Nodext.logError(&quot;Socket IO Port Busy : &quot; + e.port);
+<span id='Nodext-socket-IO-SocketIO-event-errorportbusy'>            /**
+</span>             * @event errorportbusy
+             * Se dispara cuando el puerto configurado ya se encuentra en uso por otra aplicacion o proceso.
+             * @param this
+             * @param {Object} error
+             * @param {Number} portServer
+             */
+            this.fireEvent(&quot;errorportbusy&quot;, this, e, e.port);
+        }
+<span id='Nodext-socket-IO-SocketIO-event-error'>        /**
+</span>         * @event error
+         * Se dispara cuando el servidor presenta algun problema
+         * @param this
+         * @param {Object} error
+         */
+        this.fireEvent(&quot;error&quot;, this, e);
+
+    },
+<span id='Nodext-socket-IO-SocketIO-method-onFailRedis'>    /**
+</span>     * @method
+     * @private
+     * Se ejecuta cuando la conexion redis falla.
+     */
+    onFailRedis: function (redis) {
+        if (!this.safeMode) {
+            return false;
+        }
+        if (this.initSafe) {
+            return false;
+        }
+        this.initSafe = true;
+        this.typeMode = &quot;SafeMode&quot;;
+        var port = redis.socketPort || this.socketPort;
+        this.listenMessage = &quot;Listen Port : &quot; + port;
+        this.initListen(port);
+    },
+<span id='Nodext-socket-IO-SocketIO-method-onSuccessRedis'>    /**
+</span>     * Se ejecuta cuando la conexion redis fue satisfactoria
+     */
+    onSuccessRedis: function (redis, hostRedis, portRedis, redisAdapter) {
+        this.io.adapter(redisAdapter);
+        var me = this;
+        process.on(&#39;message&#39;, function (message, connection) {
+            if (message === &quot;sticky-session:connection&quot;) {
+                me.server.emit(&#39;connection&#39;, connection);
+                connection.resume();
+            }
+        });
+        this.typeMode = &quot;RedisMode&quot;;
+        this.listenMessage = &quot;Internal Port : &quot; + redis.portInternal + &quot;,Listen Port : &quot; + redis.socketPort;
+        this.server.on({
+            listen: &#39;redisRun&#39;,
+            scope: this
+        });
+        this.server.setPortServer(redis.portInternal);
+        this.server.runServer(&#39;localhost&#39;);
+    },
+<span id='Nodext-socket-IO-SocketIO-method-initListen'>    /**
+</span>     * @method
+     * Inicia la escucha del servidor socketIo
+     * @private
+     */
+    initListen: function (port) {
+        this.server.on({
+            listen: &#39;defaultRun&#39;,
+            scope: this
+        });
+        this.server.setPortServer(port);
+        this.server.runServer();
+    },
+<span id='Nodext-socket-IO-SocketIO-method-defaultRun'>    /**
+</span>     * @method
+     * @private
+     * Se ejecuta despues de iniciar la atencion de conexiones SocketIO
+     */
+    defaultRun: function () {
+        Nodext.logEvent(&quot;Run Socket IO &quot; + this.typeMode + &quot; | &quot; + this.listenMessage);
+    },
+<span id='Nodext-socket-IO-SocketIO-method-redisRun'>    /**
+</span>     * @method
+     * @private
+     * Se ejecuta despues de iniciar la atencion de conexiones SocketIO con Redis habilitado
+     */
+    redisRun: function () {
+        var redis = this.redis,
+            socketPort = redis.socketPort,
+            portInternal = redis.portInternal;
+        Nodext.logEvent(&quot;Run Socket IO &quot; + this.typeMode + &quot; | &quot; + this.listenMessage);
+        process.send({ ename: &quot;socketbyredis&quot;, params: [process.pid, Nodext.idCluster, Nodext.idWorker, portInternal, socketPort] });
+    },
+<span id='Nodext-socket-IO-SocketIO-method-overrideIO'>    overrideIO: function () {
+</span>        var io = this.socketIO.prototype;
+
+        var Namespace = require(&#39;socket.io/lib/namespace&#39;);
+        var Socket = require(&#39;socket.io/lib/socket&#39;);
+
+
+        Socket.prototype.onclose = function (reason) {
+            if (!this.connected) return this;
+            this.emit(&#39;disconnecting&#39;, reason);
+            this.leaveAll();
+            this.nsp.remove(this);
+            this.client.remove(this);
+            this.connected = false;
+            this.disconnected = true;
+            delete this.nsp.connected[this.id];
+
+            if (this._space) {
+                var inst = this._space.newInstance(this);
+                try {
+                    this._space.fireEvent(&quot;disconect&quot;, inst, reason, this._space);
+                } catch (error) {
+                    console.log(error);
+                }
+                if (inst.autoClear &amp;&amp; inst.DBCompiles.length === 0) {
+                    inst.clear();
+                }
+            }
+
+            this._space = null;
+        };
+
+        Socket.prototype.dispatch = function (event) {
+            var self = this;
+            function dispatchSocket(err) {
+                process.nextTick(function () {
+                    if (err) {
+                        return self.error(err.data || err.message);
+                    }
+                    if (self._space) {
+                        var date = new Date();
+                        var inst = self._space.newInstance(self);
+                        // inst.initBuild();
+                        event.splice(1, 0, inst);
+                        try {
+                            self._space.fireEvent.apply(self._space, event);
+                        } catch (error) {
+                            console.log(error);
+                        }
+                        event.splice(0, event.length);
+
+                        console.log(&quot;ms : &quot; + (new Date() - date))
+                        if (inst.autoClear &amp;&amp; inst.DBCompiles.length === 0) {
+                            inst.clear();
+                        }
+                    }
+                });
+            }
+            this.run(event, dispatchSocket);
+        };
+
+
+        Namespace.prototype.add = function (client, query, fn) {
+            var socket = new Socket(this, client, query);
+            var self = this;
+            this.run(socket, function (err) {
+                process.nextTick(function () {
+                    if (&#39;open&#39; == client.conn.readyState) {
+                        if (err) return socket.error(err.data || err.message);
+
+                        // track socket
+                        self.sockets[socket.id] = socket;
+
+                        // it&#39;s paramount that the internal `onconnect` logic
+                        // fires before user-set events to prevent state order
+                        // violations (such as a disconnection before the connection
+                        // logic is complete)
+                        socket.onconnect();
+                        if (fn) fn();
+
+                        // fire user-set events
+                        self.emit(&#39;connect&#39;, socket);
+                        self.emit(&#39;connection&#39;, socket);
+                        if (self._space) {
+                            socket._space = self._space;
+                            var inst = self._space.newInstance(socket);
+                            try {
+                                self._space.fireEvent(&quot;connect&quot;, inst, self);
+                            } catch (error) {
+                                console.log(error);
+                            }
+                            if (inst.autoClear &amp;&amp; inst.DBCompiles.length === 0) {
+                                inst.clear();
+                            }
+                        }
+
+                    } else {
+                        debug(&#39;next called after client was closed - ignoring socket&#39;);
+                    }
+                });
+            });
+            return socket;
+        };
+
+        io.of = function (name, fn) {
+            if (String(name)[0] !== &#39;/&#39;) name = &#39;/&#39; + name;
+
+            var nsp = this.nsps[name];
+            if (!nsp) {
+                nsp = new Namespace(this, name);
+                this.nsps[name] = nsp;
+            }
+            if (fn) nsp.on(&#39;connect&#39;, fn);
+            return nsp;
+        };
+    }
+});</pre>
+</body>
+</html>

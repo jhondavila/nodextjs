@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-model-Mixin'>/**
+</span> * 
+ */
+Nodext.define(&quot;Nodext.model.Mixin&quot;, {
+    extend: &quot;Ext.Mixin&quot;,
+    requires: [
+        &quot;Nodext.model.Manager&quot;
+    ],
+<span id='Nodext-model-Mixin-property-mixinConfig'>    mixinConfig: {
+</span>        id: &#39;modelmgr&#39;
+    },
+    config: {
+<span id='Nodext-model-Mixin-cfg-modelMgr'>        modelMgr: false
+</span>    },
+<span id='Nodext-model-Mixin-method-constructor'>    constructor: function () {
+</span>        if (this.modelMgr !== false) {
+            this.modelMgr = Ext.isBoolean(this.modelMgr) ? {} : this.modelMgr;
+            Nodext.apply(this.modelMgr, {
+                appNode: this.appNode,
+            });
+            var groupAlias = this.modelMgr.groupAlias || &quot;models&quot;;
+            if (!(this.modelMgr instanceof Nodext.model.Manager)) {
+                this.modelMgr = Nodext.create(&quot;Nodext.model.Manager&quot;, this.modelMgr);
+                if (!this.modelMgr.autoLoad) {
+                    this.modelMgr.start();
+                }
+            }
+            if (this.addMapClsManager) {
+                this.addMapClsManager(groupAlias, this.modelMgr);
+            } else {
+                Nodext.logError(&quot;No found method addMapClsManager,please mixin your class with Nodext.util.MapClass&quot;);
+            }
+        }
+    }
+});</pre>
+</body>
+</html>

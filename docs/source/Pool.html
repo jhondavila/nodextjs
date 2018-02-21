@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-database-postgre-Pool'>/**
+</span> * 
+ */
+Nodext.define(&quot;Nodext.database.postgre.Pool&quot;, {
+<span id='Nodext-database-postgre-Pool-property-cnx'>    cnx: null,
+</span><span id='Nodext-database-postgre-Pool-property-open'>    open: false,
+</span><span id='Nodext-database-postgre-Pool-property-init'>    init: false,
+</span><span id='Nodext-database-postgre-Pool-property-errorCnx'>    errorCnx: false,
+</span><span id='Nodext-database-postgre-Pool-property-type'>    type: &quot;pool&quot;,
+</span><span id='Nodext-database-postgre-Pool-property-connection'>    connection: null,
+</span><span id='Nodext-database-postgre-Pool-property-strCon'>    strCon: null,
+</span><span id='Nodext-database-postgre-Pool-method-constructor'>    constructor: function (cfg) {
+</span>        Nodext.apply(this, cfg || {});
+    },
+<span id='Nodext-database-postgre-Pool-method-setErrorCnx'>    setErrorCnx: function (value) {
+</span>        this.done();
+        this.errorCnx = value;
+    },
+<span id='Nodext-database-postgre-Pool-method-connect'>    connect: function (fn) {
+</span>        var me = this;
+        return this.cnx.connect(function (err, client, done) {
+            me.client = client;
+            me.done = done;
+            fn.call(null, err);
+            me = null;
+        });
+    },
+<span id='Nodext-database-postgre-Pool-method-query'>    query: function (query, fn) {
+</span>        return this.client.query(query, fn);
+    },
+<span id='Nodext-database-postgre-Pool-method-close'>    close: function () {
+</span>        this.open = false;
+        if (!this.errorCnx &amp;&amp; this.done) {
+            this.done();
+        }
+        this.done = this.client = null;
+    },
+<span id='Nodext-database-postgre-Pool-method-destroy'>    destroy: function () {
+</span>        this.close();
+        this.cnx = this.connection = null;
+        this.callParent();
+        Nodext.destroyClass(this);
+        delete this;
+    }
+});</pre>
+</body>
+</html>

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-module-FileSystem'>/**
+</span> * 
+ */
+Nodext.define(&quot;Nodext.module.FileSystem&quot;, {
+    extend: &quot;Ext.Base&quot;,
+<span id='Nodext-module-FileSystem-property-S-configPrefixed'>    $configPrefixed: false,
+</span>    alternateClassName: [&quot;Nodext.FS&quot;],
+    singleton: true,
+<span id='Nodext-module-FileSystem-property-fs'>    /**
+</span>     * @property {NodeModule} fs
+     */
+    fs: null,
+<span id='Nodext-module-FileSystem-property-filesize'>    /**
+</span>     * @property {NodeModule} filesize
+     */
+    filesize: null,
+<span id='Nodext-module-FileSystem-method-constructor'>    constructor: function (cfg) {
+</span>        Nodext.apply(this, cfg || {});
+        this.initConfig();
+        this.fs = require(&#39;fs&#39;);
+        this.filesize = require(&#39;file-size&#39;);
+    },
+<span id='Nodext-module-FileSystem-method-readdirSync'>    readdirSync: function (dir) {
+</span>        return this.fs.readdirSync(dir);
+    },
+<span id='Nodext-module-FileSystem-method-statSync'>    statSync: function (name) {
+</span>        return this.fs.statSync(name);
+    },
+<span id='Nodext-module-FileSystem-method-getSizeMB'>    getSizeMB: function (value) {
+</span>        if (value) {
+            return this.filesize(parseInt(value)).to(&#39;MB&#39;) + &#39; MB&#39;;
+        } else {
+            return &quot;&quot;;
+        }
+    }
+
+});</pre>
+</body>
+</html>

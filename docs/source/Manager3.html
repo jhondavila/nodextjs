@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-model-Manager'>/**
+</span> * 
+ */
+Nodext.define(&quot;Nodext.model.Manager&quot;, {
+    extend: &quot;Nodext.app.FileLoader&quot;,
+    alternateClassName: [&quot;Nodext.ModelRegister&quot;],
+<span id='Nodext-model-Manager-cfg-loaderPath'>    loaderPath: &quot;models&quot;,
+</span><span id='Nodext-model-Manager-cfg-autoLoad'>    autoLoad: false,
+</span>    config: {
+<span id='Nodext-model-Manager-cfg-server'>        server: null
+</span>    },
+<span id='Nodext-model-Manager-method-getIdItem'>    getIdItem: function (item) {
+</span>        return item._keyItem;
+    },
+<span id='Nodext-model-Manager-method-getModel'>    getModel: function (key) {
+</span>        return this.items.get(key);
+    },
+<span id='Nodext-model-Manager-method-buildClass'>    buildClass: function (className) {
+</span>        var item = Nodext.create(className, {
+            appNode: this.appNode,
+            server: this.server
+        });
+        item._keyItem = className;
+        this.items.add(item);
+    }
+});</pre>
+</body>
+</html>

@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext'>/**
+</span> * @class Nodext
+ * @extend Ext
+ * @singleton
+ */
+(function () {
+    var value, param;
+
+<span id='Nodext-property-argv'>    /**
+</span>     * Contiene los comandos de inicio pasadas a la aplicación.
+     */
+    Nodext.argv = {};
+
+    process.argv.forEach(function (val, index) {
+        param = val.split(&#39;=&#39;);
+        if (param.length === 1) {
+            Nodext.argv[index] = param[0];
+        } else if (param.length &gt; 1) {
+            value = Nodext.isString(param[1]) ? param[1].toLowerCase().trim() : undefined;
+            if (Nodext.isNumeric(value)) {
+                Nodext.argv[param[0]] = parseFloat(value);
+            } else if (value === &quot;true&quot;) {
+                Nodext.argv[param[0]] = true;
+            } else if (value === &quot;false&quot;) {
+                Nodext.argv[param[0]] = false;
+            } else {
+                Nodext.argv[param[0]] = param[1];
+            }
+        }
+    });
+    value = param = null;
+
+    Nodext.apply(Nodext, {
+<span id='Nodext-method-addPropToFn'>        /**
+</span>         * @method
+         * Añade propiedades a una funccion
+         * @param {Function} fn
+         * @param {Object} cfg
+         */
+        addPropToFn: function (fn, cfg, opts) {
+            var value;
+            for (var p in cfg) {
+                value = { value: cfg[p] };
+                Nodext.apply(value, opts || {});
+                Object.defineProperty(fn, p, value);
+            }
+        },
+<span id='Nodext-method-launch'>        /**
+</span>            * @method launch
+            * Lanza una applicacion a partir de la configuracion json suministrada y su directorio.
+            * @param {String} app
+            * @param {String} pathBase
+            * @param {Function} fn 
+            */
+        launch: function (app, pathBase, fn) {
+            var ready = function () {
+                var fullPathApp = pathBase + &quot;\/&quot; + app.path;
+                if (!Nodext.currentLaunch) {
+                    Nodext.currentLaunch = {
+                        fullPathApp: fullPathApp,
+                        appLoadCfg: app,
+                        pathBase: pathBase
+                    };
+                    require(fullPathApp + &quot;\/&quot; + app.init);
+                    if (fn) {
+                        Nodext.onReady(fn);
+                    }
+                } else {
+                    setImmediate(function () {
+                        Nodext.Launch(app, pathBase, fn);
+                    }, 200);
+                }
+            };
+            Nodext.onReady(ready);
+        },
+<span id='Nodext-method-application'>        /**
+</span>         * @method application
+         * Crea una nueva aplicacion, por defecto es una instancia de {@link Nodext.app.Node}
+         * @param {Object} app
+         */
+        application: function (app) {
+            var ready = function () {
+                var obj = Nodext.currentLaunch;
+                if (obj) {
+                    app.fileCfg = obj.appLoadCfg;
+                    app.fileCfg.path = app.path || obj.appLoadCfg.path;
+                    app.pathBase = app.pathBase || obj.pathBase;
+                }
+                Nodext.currentLaunch = null;
+                var extend = app.extend || &quot;Nodext.app.Node&quot;;
+                return Ext.create(extend, app);
+            };
+            Nodext.onReady(ready);
+        },
+<span id='Nodext-method-destroy'>        /**
+</span>         * @method destroy
+         * Destruye un Arreglo/Objetos
+         */
+        destroy: function () {
+            var ln = arguments.length,
+                i, arg, x;
+            for (i = 0; i &lt; ln; i++) {
+                arg = arguments[i];
+                if (arg) {
+                    if (Ext.isArray(arg)) {
+                        this.destroy.apply(this, arg);
+                    } else if (Ext.isFunction(arg.destroy)) {
+                        arg.destroy();
+                    } else if (Ext.isObject(arg)) {
+                        for (var index in arg) {
+                            arg[index] = null;
+                            delete arg[index];
+                        }
+                        arg = null;
+                        delete arg;
+                    }
+                }
+            }
+            return null;
+        },
+
+<span id='Nodext-method-destroyArray'>        /**
+</span>         * @method destroyArray
+         * Destruye Arreglos explicitamente,limpiando sus elementos.
+         */
+        destroyArray: function () {
+            var ln = arguments.length,
+                i, arg, x;
+            for (i = 0; i &lt; ln; i++) {
+                arg = arguments[i];
+                if (Array.isArray(arg)) {
+                    arg.splice(0, arg.length);
+                }
+            }
+            arg = null;
+        },
+
+<span id='Nodext-method-destroyClass'>        /**
+</span>         * @method destroyClass
+         * Destruye Clases explicitamente
+         */
+        destroyClass: function () {
+            var ln = arguments.length,
+                i, arg, x;
+            for (i = 0; i &lt; ln; i++) {
+                arg = arguments[i];
+                if (arg) {
+                    if (Ext.isObject(arg)) {
+                        for (var index in arg) {
+                            arg[index] = null;
+                            delete arg[index];
+                        }
+                        arg.isDestroyed = arg.destroyed = true;
+                    }
+                }
+            }
+            arg = null;
+            return null;
+        },
+
+<span id='Nodext-method-destroyObject'>        /**
+</span>         * @method destroyObject
+         * Destruye Objetos explicitamente
+         */
+        destroyObject: function () {
+            var ln = arguments.length,
+                i, arg, x;
+            for (i = 0; i &lt; ln; i++) {
+                arg = arguments[i];
+                if (arg) {
+                    if (Ext.isObject(arg)) {
+                        for (var index in arg) {
+                            if (Array.isArray(arg[index])) {
+                                arg[index].splice(0, arg[index].length);
+                            } else {
+                                arg[index] = null;
+                            }
+                            delete arg[index];
+                        }
+                    }
+                }
+            }
+            arg = null;
+            return null;
+        },
+
+<span id='Nodext-method-destroyMembers'>        /**
+</span>        * @method destroyMembers
+        * Destruye los nombres de los mienbros especificados usando Nodext.destroy, todas las propiedades van a ser
+        * configuradas a nulo.
+        * @param {Object} object
+        * @param {String...} args
+        */
+        destroyMembers: function (object) {
+            for (var ref, name, i = 1, a = arguments, len = a.length; i &lt; len; i++) {
+                ref = object[name = a[i]];
+                if (ref != null) {
+                    object[name] = Ext.destroy(ref);
+                }
+            }
+        },
+
+<span id='Nodext-method-copyData'>        /**
+</span>         * @method copyData
+         * Copia las propiedades de los elementos de un arreglo en uno nuevo.
+         * @param {Array} array
+         * @param {Array} properties
+         */
+        copyData: function (array, properties) {
+            var x;
+            var data = [], item, p;
+            if (!properties) {
+                properties = {};
+                for (x = 0; x &lt; array.length; x++) {
+                    item = {};
+                    for (p in array[x]) {
+                        item[p] = array[x][p];
+                    }
+                    data.push(item);
+                }
+            } else {
+                for (x = 0; x &lt; array.length; x++) {
+                    item = {};
+                    for (p in properties) {
+                        item[properties[p]] = array[x][p];
+                    }
+                    data.push(item);
+                }
+            }
+            return data;
+        },
+
+<span id='Nodext-method-instDeath'>        /**
+</span>         * @method instDeath
+         * Valida que la instancia no halla realizado la respuesta al cliente.
+         */
+        instDeath: function (inst) {
+            if (!inst || (inst.hasOwnProperty(&quot;sendRes&quot;) &amp;&amp; !inst.sendRes)) {
+                Nodext.logError(&quot;Esta instacia ya ha ha muerto...valimos madres... -.-&quot;);
+                return true;
+            } else {
+                return false;
+            }
+        },
+<span id='Nodext-property-cluster'>        /**
+</span>         * @property {NodeModule} cluster
+         * Carga la Libreria Cluster de NodeJS, de esta manera detectamos si el proceso es un Maestro o worker.
+         */
+        cluster: require(&#39;cluster&#39;),
+<span id='Nodext-method-isMaster'>        /**
+</span>         * @method isMaster
+         * Indica si el proceso actual es el maestro o el worker
+         */
+        isMaster: function () {
+            if (this.cluster.isMaster) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+    });
+
+})();
+</pre>
+</body>
+</html>

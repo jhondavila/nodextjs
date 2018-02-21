@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-database-query-Builder'>/**
+</span> * 
+ */
+Nodext.define(&quot;Nodext.database.query.Builder&quot;, {
+    extend: &#39;Nodext.database.query.Forge&#39;,
+    alias: &quot;qb.base&quot;,
+    mixins: [
+        &#39;Ext.mixin.Factoryable&#39;
+    ],
+<span id='Nodext-database-query-Builder-property-factoryConfig'>    factoryConfig: {
+</span>        defaultType: &#39;base&#39;,
+        defaultProperty: &quot;type&quot;
+    },
+<span id='Nodext-database-query-Builder-property-whereTypeMethod'>    whereTypeMethod: {
+</span>        ///
+        where: 0,
+        or_where: 0,
+        where_in: 0,
+        or_where_in: 0,
+        where_not_in: 0,
+        or_where_not_in: 0,
+        ///
+        like: 0,
+        not_like: 0,
+        or_like: 0,
+        or_not_like: 0,
+        ///
+        or_group_start: 2,
+        not_group_start: 2,
+        or_not_group_start: 2,
+        group_start: 2
+    },
+<span id='Nodext-database-query-Builder-property-propQueryObj'>    propQueryObj: [
+</span>        &quot;select&quot;, &quot;from&quot;, &quot;where&quot;, &quot;join&quot;, &quot;distinct&quot;, &quot;start&quot;, &quot;limit&quot;, &quot;group_by&quot;, &quot;order_by&quot;
+    ],
+    // query: function (inst, query, fn, run) {
+    //     if (inst) {
+    //         return false;
+    //     }
+    //     var me = this, compile = me.queryCompile(inst, query);
+    //     if (typeof run === &quot;undefined&quot; || run === true) {
+    //         var config = {
+    //             results: compile,
+    //             callback: fn
+    //         };
+    //         this.initQuery(inst, config);
+    //     } else {
+    //         return compile;
+    //     }
+    //     me = query = compile = null;
+    // },
+    // compile: function (inst, params2) {
+    //     // var inst = params1 instanceof Nodext.system.core.instance.Base ? params1 : false;
+    //     if (inst) {
+    //         return false;
+    //     }
+    //     var buildQuery = false, q, qCfg;
+    //     if (Nodext.isObject(params2)) {
+    //         buildQuery = true;
+    //         qCfg = params2;
+    //         q = this.compileQueryObject(inst, params2);
+    //     } else if (Nodext.isArray(params2) &amp;&amp; params2.length &gt; 0) {
+    //         buildQuery = true;
+    //         qCfg = params2[0];
+    //         q = this.compileQueryObject(inst, params2[0]);
+    //     }
+    //     if (buildQuery) {
+    //         if (qCfg &amp;&amp; qCfg.debug) {
+    //             console.log(&#39;-----------Debug Compile-------------&#39;);
+    //             console.log(q);
+    //             console.log(&#39;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;End Debug Compile&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&#39;);
+    //         }
+    //         inst = buildQuery = qCfg = null;
+    //         return q;
+    //     } else {
+    //         inst = buildQuery = qCfg = null;
+    //         return null;
+    //     }
+    // },
+    // compileQuerys: function (inst, params2, params3) {
+    //     // var inst = params1 instanceof Nodext.system.core.instance.Base ? params1 : false;
+    //     if ((!Nodext.isArray(params2) &amp;&amp; !Nodext.isObject(params2)) || !inst) {
+    //         return false;
+    //     }
+    //     var compile = [], q;
+    //     if (!Nodext.isArray(params2)) {
+    //         params2 = [params2];
+    //     }
+    //     for (var x = 0; x &lt; params2.length; x++) {
+    //         q = this.compileQueryObject(inst, params2[x]);
+    //         if (q) {
+    //             compile.push(q);
+    //         }
+    //     }
+    //     Nodext.destroyArray(params2);
+    //     params2 = null;
+    //     if (!params3) {
+    //         return compile;
+    //     } else if (params3.tpl) {
+    //         q = Ext.String.format.apply(null, [(Array.isArray(params3.tpl) ? params3.tpl.join(&quot;\n&quot;) : params3.tpl)].concat(compile));
+    //         Nodext.destroyClass(params3);
+    //         params3 = null;
+    //         return q;
+    //     }
+    // },
+    // get: function (inst, params2, params3) {
+    //     // var inst = params1 instanceof Nodext.system.core.instance.Base ? params1 : false;
+    //     if (!inst) {
+    //         console.trace(&quot;el primer parametro en una consulta siempre es la instancia&quot;);
+    //         return false;
+    //     }
+    //     if (!Nodext.isFunction(params3)) {
+    //         console.trace(&quot;No existe callback / revise los objetos enviados&quot;);
+    //         return false;
+    //     }
+
+    //     var me = this, results = [], fn, buildQuery = false;
+    //     fn = params3;
+    //     if (Nodext.isObject(params2) || Nodext.isArray(params2)) {
+    //         me.prepareQueryObject(inst, params2, results);
+    //     }
+
+<span id='Nodext-database-query-Builder-method-getResults'>    //     me.initQuery(inst, {
+</span>    //         results: results,
+    //         callback: params3
+    //     });
+    //     me = results = buildQuery = null;
+    // },
+    // getResults: function (inst, querys) {
+    //     var results = [];
+    //     if (Array.isArray(querys)) {
+    //         var x, item;
+    //         for (x = 0; x &lt; querys.length; x++) {
+    //             item = null;
+    //             if (typeof querys[x] === &quot;string&quot;) {
+    //                 if (Nodext.Array.contains(this.executeTypeTrans, querys[x])) {
+    //                     item = this.createRSTrans(inst, this[querys[x]]());
+    //                 } else {
+    //                     item = this.createResult(inst, { query: querys[x], requireCompile: false });
+    //                 }
+    //             } else if (Nodext.isObject(querys[x])) {
+    //                 if (querys[x].type &amp;&amp; this[querys[x].type]) {
+    //                     item = this[querys[x].type](inst, querys[x], null, false);
+    //                 } else {
+    //                     item = this.prepareQueryObject(inst, querys[x], results);
+    //                 }
+    //             }
+    //             if (item) {
+    //                 results.push(item);
+    //             }
+    //         }
+    //         x = item = null;
+    //     }
+    //     return results;
+    // },
+    getResults: function (inst, querys) {
+        var results = [], x, item;
+        if (Array.isArray(querys)) {
+            for (x = 0; x &lt; querys.length; x++) {
+                item = null;
+                if (typeof querys[x] === &quot;string&quot;) {
+                    if (Nodext.Array.contains(this.executeTypeTrans, querys[x])) {
+                        item = this.createRSTrans(inst, this[querys[x]]());
+                    } else {
+                        item = this.createResult(inst, { query: querys[x], requireCompile: false });
+                    }
+                } else if (Nodext.isObject(querys[x])) {
+                    if (querys[x].type &amp;&amp; this[querys[x].type]) {
+                        item = this[querys[x].type](inst, querys[x], null, false);
+                    } else {
+                        item = this.prepareQueryObject(inst, querys[x], results);
+                    }
+                }
+                if (item) {
+                    results.push(item);
+                }
+            }
+        }
+        x = item = null;
+        return results;
+    },
+    // execute: function (inst, params, fn) {
+    //     if (!inst) {
+    //         console.trace(&quot;el primer parametro en una consulta siempre es la instancia&quot;);
+    //         return false;
+    //     }
+    //     var config = Nodext.isObject(params) &amp;&amp; params.querys ? params : {};
+    //     if (Array.isArray(params)) {
+    //         config.querys = params;
+    //     } else if (Nodext.isObject(params) &amp;&amp; !params.querys) {
+    //         config.querys = [params];
+    //     }
+    //     config.callback = config.callback || fn;
+    //     if (!config.callback) {
+    //         Ext.destroyObject(params);
+    //         inst.sendError({
+    //             success: false,
+    //             message: this.msgError || &#39;No se proporciono el metodo de rellamado&#39;
+    //         });
+    //         return false;
+    //     }
+    //     var results = this.getResults(inst, config.querys);
+    //     config.results = results;
+    //     this.initQuery(inst, config);
+    //     results = params = null;
+    // },
+
+
+<span id='Nodext-database-query-Builder-method-createResult'>    ///////////
+</span>    ///////////
+    ///////////
+    ///////////
+    ///////////
+    createResult: function () {
+        console.trace(&quot;debes implementar createResult en la clase hijo&quot;);
+    },
+<span id='Nodext-database-query-Builder-method-applyBasicCompile'>    applyBasicCompile: function (queryObject) {
+</span>
+        if (queryObject.start || queryObject.limit) {
+            this.limit(queryObject, queryObject[&quot;limit&quot;], queryObject[&quot;start&quot;]);
+        }
+        this.__SetSelect(queryObject, queryObject.select);
+        this.__SetWhere(queryObject, queryObject.where);
+
+        this.__SetFrom(queryObject, queryObject.from);
+        this.__SetJoin(queryObject, queryObject.join);
+        if (queryObject.distinct) {
+            this.distinct(queryObject, queryObject.distinct);
+        }
+        this.__setGroup_by(queryObject, queryObject.group_by);
+        this.__setOrder_by(queryObject, queryObject.order_by);
+    },
+<span id='Nodext-database-query-Builder-method-__SetFrom'>    __SetFrom: function (qObj, value) {
+</span>
+        if (typeof value === &quot;string&quot;) {
+            this.from(qObj, value);
+        } else if (value) {
+            if (Nodext.isObject(value)) {
+                value = [value];
+            }
+            var me = this;
+            value.forEach(function (v) {
+                if (typeof v === &quot;string&quot;) {
+                    me.from(qObj, v);
+                } else if (Array.isArray(v)) {
+                    me.from.apply(me, [qObj].concat(v));
+                } else if (Nodext.isObject(v)) {
+                    if (v.type === &quot;pivot&quot;) {
+                        me[&quot;frompivot&quot;].apply(me, [qObj].concat(v));
+                    } else {
+                        me[&quot;fromselect&quot;].apply(me, [qObj].concat(v));
+                    }
+                }
+            });
+            me = null;
+        }
+    },
+<span id='Nodext-database-query-Builder-method-queryCompile'>    queryCompile: function (inst, query) {
+</span>        var me = this, compile = [];
+        if (Array.isArray(query)) {
+            query.forEach(function (q) {
+                compile.push(me.createResult(inst, { query: q, requireCompile: false }));
+            });
+        } else if (Nodext.isObject(query)) {
+            compile.push(me.createResult(inst, query));
+        } else if (typeof query === &quot;string&quot;) {
+            compile.push(me.createResult(inst, { query: query, requireCompile: false }));
+        }
+        return compile;
+    },
+<span id='Nodext-database-query-Builder-method-__setOrder_by'>    __setOrder_by: function (qObj, value) {
+</span>        //        if(value)
+        if (!Array.isArray(value)) {
+            return false;
+        }
+        var x;
+        for (x = 0; x &lt; value.length; x++) {
+            if (typeof value[x] === &quot;string&quot;) {
+                this.order_by(qObj, value[x]);
+            } else if (Array.isArray(value[x])) {
+                this.order_by.apply(this, [qObj].concat(value[x]));
+            }
+        }
+        x = null;
+    },
+<span id='Nodext-database-query-Builder-method-__setGroup_by'>    __setGroup_by: function (qObj, value) {
+</span>
+        if (!Array.isArray(value)) {
+            return false;
+        }
+        var x;
+        for (x = 0; x &lt; value.length; x++) {
+            if (typeof value[x] === &quot;string&quot;) {
+                this.group_by(qObj, value[x]);
+            } else if (Array.isArray(value[x])) {
+                this.group_by.apply(this, [qObj].concat(value[x]));
+            }
+        }
+
+
+        // if (!Array.isArray(value)) {
+        //     value = [value];
+        // }
+
+        // for (var x = 0; x &lt; value.length; x++) {
+        //     this.group_by.apply(this, [qObj].concat(value[x]));
+        // }
+    },
+<span id='Nodext-database-query-Builder-method-__SetWhere'>    __SetWhere: function (qObj, value) {
+</span>        var me = this,
+            type, method;
+        if (typeof value === &quot;object&quot;) {
+            if (!Array.isArray(value)) {
+                value = [value];
+            }
+            value.forEach(function (v) {
+                type = v.type || &#39;where&#39;;
+                method = me.whereTypeMethod[type];
+                if (method === 0) {
+                    me[type](qObj, v);
+                } else if (method === 2) {
+                    me[type](qObj);
+                    if (Array.isArray(v.where)) {
+                        me.__SetWhere(qObj, v.where);
+                    }
+                    me.group_end(qObj);
+                }
+            });
+        } else if (typeof value === &quot;string&quot;) {
+            me.where(qObj, value);
+        }
+    },
+<span id='Nodext-database-query-Builder-property-mapSelectFn'>    mapSelectFn: {
+</span>        subselect : &#39;subSelect&#39;,
+        select: &quot;subSelect&quot;,
+        case: &quot;selectCase&quot;,
+        template: &quot;selectTemplate&quot;,
+        min : &quot;selectMin&quot;,
+        max : &quot;selectMax&quot;,
+        avg : &quot;selectAvg&quot;,
+        sum : &quot;selectSum&quot;
+    },
+<span id='Nodext-database-query-Builder-method-__SetSelect'>    __SetSelect: function (qObj, value) {
+</span>        var me = this, type;
+        if (!Array.isArray(value)) {
+            return false;
+        }
+        // debugger
+        value.forEach(function (v) {
+            if (typeof v === &quot;string&quot;) {
+                me.select(qObj, v);
+            } else if (Array.isArray(v)) {
+
+                me.select.apply(me, [qObj].concat(v));
+
+
+            } else if (Nodext.isObject(v)) {
+                type = me.mapSelectFn[v.type || &quot;select&quot;];
+                me[type].apply(me, [qObj].concat(v));
+            } else if (Number.isInteger(v)) {
+                me.select(qObj, &quot;cast(&quot; + this.escape(v) + &quot; as integer)&quot;, false);
+            } else if (!isNaN(v)) {
+                me.select(qObj, &quot;cast(&quot; + v + &quot; as numeric)&quot;, false);
+            }
+        });
+    },
+<span id='Nodext-database-query-Builder-method-__SetJoin'>    __SetJoin: function (inst, value) {
+</span>        //        var me = this;
+        if (!Array.isArray(value)) {
+            return false;
+        }
+        for (var x = 0; x &lt; value.length; x++) {
+            this.join.apply(this, [inst].concat(value[x]));
+        }
+    },
+<span id='Nodext-database-query-Builder-method-_insert'>    _insert: function (table, keys, values) {
+</span>        return &#39;INSERT INTO &#39; + table + &#39; (&#39; + keys.join(&#39;, &#39;) + &#39;) VALUES (&#39; + values.join(&#39;, &#39;) + &#39;)&#39;;
+    },
+<span id='Nodext-database-query-Builder-method-compileQueryObject'>    compileQueryObject: function (inst, itemQ) {
+</span>        var queryObj = Nodext.create(&quot;Nodext.database.query.Object&quot;, itemQ);
+        this.applyBasicCompile(queryObj);
+        var query = this._compile_select(queryObj.QB);
+        queryObj.destroy();
+        queryObj = null;
+        return query;
+    },
+<span id='Nodext-database-query-Builder-method-prepareQueryObject'>    prepareQueryObject: function (inst, config, results) {
+</span>        if (Nodext.isObject(config) || Nodext.isArray(config)) {
+            var querys = Nodext.isObject(config) ? [config] : config, itemQ, itemProp, queryObj;
+            for (var x = 0; x &lt; querys.length; x++) {
+                itemQ = querys[x];
+                if (!itemQ.queryObject) {
+                    itemQ[&quot;queryObject&quot;] = this.createQueryObject(itemQ);
+                } else {
+                    itemQ[&quot;queryObject&quot;] = this.createQueryObject(itemQ.queryObject);
+                }
+                results.push(this.createResult(inst, querys[x]));
+            }
+            itemQ = itemProp = queryObj = null;
+        }
+    },
+<span id='Nodext-database-query-Builder-method-createQueryObject'>    createQueryObject: function (item) {
+</span>        if (!(item instanceof Nodext.database.query.Object)) {
+            var queryObj = {}, itemProp;
+            for (var p = 0; p &lt; this.propQueryObj.length; p++) {
+                itemProp = this.propQueryObj[p];
+                if (item.hasOwnProperty(itemProp)) {
+                    queryObj[itemProp] = item[itemProp];
+                    item[itemProp] = null;
+                    delete item[itemProp];
+                }
+            }
+            queryObj = Nodext.create(&quot;Nodext.database.query.Object&quot;, queryObj);
+            itemProp = null;
+            return queryObj;
+        } else {
+            return item;
+        }
+    }
+});</pre>
+</body>
+</html>

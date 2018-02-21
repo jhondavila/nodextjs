@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-http-Domain'>/**
+</span> * 
+ */
+Nodext.define(&quot;Nodext.http.Domain&quot;, {
+    extend: &quot;Ext.Base&quot;,
+    alternateClassName: [&quot;Nodext.Domain&quot;],
+<span id='Nodext-http-Domain-property-S-configPrefixed'>    $configPrefixed: false,
+</span>    mixins: {
+        observable: &#39;Ext.util.Observable&#39;
+    },
+    config: {
+<span id='Nodext-http-Domain-cfg-server'>        /**
+</span>         * @cfg {Nodext.http.Server} server
+         */
+        server: null,
+<span id='Nodext-http-Domain-cfg-organization'>        /**
+</span>         * Lista de organizaciones permitidas para este dominio
+         */
+        organization: null,
+<span id='Nodext-http-Domain-cfg-dbOrganization'>        /**
+</span>         * Nombre de la con
+         */
+        dbOrganization: false,
+<span id='Nodext-http-Domain-cfg-DBcnxName'>        DBcnxName: null,
+</span><span id='Nodext-http-Domain-cfg-systemSrv'>        systemSrv: null,
+</span>    },
+<span id='Nodext-http-Domain-property-list'>    list: null,
+</span><span id='Nodext-http-Domain-property-listId'>    listId: null,
+</span><span id='Nodext-http-Domain-property-regEx'>    regEx: /(\/\w+\/|\/)(?=.*)/i,
+</span><span id='Nodext-http-Domain-method-constructor'>    constructor: function (cfg) {
+</span>        cfg = cfg || {};
+        Nodext.apply(this, cfg);
+        this.initConfig(cfg);
+        this.mixins.observable.constructor.call(this, cfg);
+        this.list = {
+        };
+        this.listId = {
+        };
+        this.addDomain(this.organization || []);
+    },
+<span id='Nodext-http-Domain-method-middleware'>    middleware: function () {
+</span>        var me = this;
+        var fn = function (req, res, next) {
+            var m = me.regEx.exec(req.url);
+            var domain = m ? m[0] : &quot;&quot;;
+            req.idDomain = me.getId(domain);
+
+            if (req.idDomain !== false) {
+                req.url = req.url.substring(domain.length - 1, req.url.length);
+            } else {
+                req.idDomain = me.getId(&quot;/&quot;);
+            }
+
+
+            if (req.idDomain !== false) {
+                req.orgDomain = {
+                    name: me.getDomainById(req.idDomain),
+                    id: req.idDomain
+                };
+                // debugger
+                next();
+            } else {
+                res.status(404).send({
+                    success: false,
+                    message: &quot;Dominio no existe&quot;,
+                    page: req.url
+                })
+            }
+        };
+        Nodext.addPropToFn(fn, {
+            name: &quot;server.domain&quot;,
+            _id: Nodext.id(&quot;Domain-&quot;),
+            _type: &quot;domain&quot;
+        });
+        return fn;
+    },
+<span id='Nodext-http-Domain-method-addDomain'>    addDomain: function (data) {
+</span>        var d;
+        for (var x = 0; x &lt; data.length; x++) {
+            if (data[x]) {
+                var obj = {};
+                Nodext.apply(obj, data[x]);
+                if (data[x].domain !== &quot;/&quot;) {
+                    d = &#39;/&#39; + data[x].domain.toUpperCase() + &#39;/&#39;;
+                } else {
+                    d = data[x].domain;
+                }
+                this.list[d] = obj;
+                this.listId[obj.id_org] = obj;
+
+            }
+        }
+    },
+<span id='Nodext-http-Domain-method-getId'>    getId: function (name, slash) {
+</span>        name = name.toUpperCase();
+        if (this.list[name]) {
+            return this.list[name].id_org;
+        } else {
+            return false;
+        }
+    },
+<span id='Nodext-http-Domain-method-onLoadClass'>    //////////////////////7
+</span>    ///////////////////////
+    //////////////////////
+    onLoadClass: function (init) {
+        this.path = init.path;
+        var domainCfg = this.getDomainConfig();
+        Nodext.apply(this, domainCfg);
+        init.on({
+            librariesload: {
+                fn: &quot;initLibrariesComplete&quot;,
+                priority: 100
+            },
+            scope: this
+        });
+    },
+<span id='Nodext-http-Domain-method-getDomainConfig'>    getDomainConfig: function () {
+</span>        try {
+            return require(this.path + &quot;/server/config/Domain.json&quot;);
+        } catch (e) {
+            return {};
+        }
+    },
+<span id='Nodext-http-Domain-method-initLibrariesComplete'>    initLibrariesComplete: function () {
+</span>        if (Nodext.system &amp;&amp; Nodext.system.Server) {
+            var listen = {
+                beforerunserver: &quot;beforeRunServer&quot;,
+                scope: this
+            };
+            Nodext.system.Server.on(listen);
+            listen = null;
+        } else {
+            console.log(&quot;no existe Nodext.system.Server&quot;);
+        }
+    },
+<span id='Nodext-http-Domain-method-beforeRunServer'>    beforeRunServer: function (SystemSrv, srv) {
+</span>        this.indexCheckRun = SystemSrv.addTaskLib(&quot;GlobalDomain&quot;);
+        this.systemSrv = SystemSrv;
+        this.on({
+            onready: &quot;runServer&quot;,
+            scope: SystemSrv
+        });
+        this.initClass();
+    },
+<span id='Nodext-http-Domain-method-initClass'>    initClass: function () {
+</span>        this.db = Nodext.db.Mgr.getQB(this.DBcnxName);
+        this.on({
+            ongetdomains: &#39;onGetDomains&#39;,
+            scope: this
+        });
+        this.createInst();
+        this.getDomains();
+    },
+<span id='Nodext-http-Domain-method-getDomains'>    getDomains: function () {
+</span>        var me = this;
+        this.db.execute(this.inst, {
+            querys: [{
+                onErrorResMsg: false,
+                from: &quot;core.organization&quot;,
+                where: {
+                    swt_status: 0
+                }
+            }],
+            listeners: {
+                connectionexception: &#39;failureConnection&#39;,
+                scope: this
+            },
+            onErrorResMsg: false
+        }, function (rs, rsg) {
+            me.fireEvent(&quot;ongetdomains&quot;, rs.getData());
+            me = null;
+        });
+    },
+<span id='Nodext-http-Domain-method-failureConnection'>    failureConnection: function () {
+</span>        this.inst = null;
+    },
+<span id='Nodext-http-Domain-method-createInst'>    createInst: function () {
+</span>        this.inst = Nodext.create(&quot;Nodext.system.core.instance.Base&quot;, {
+            DBcnxName: this.DBcnxName,
+            DBCnxAuto: true,
+        });
+        this.inst.initBuild();
+    },
+<span id='Nodext-http-Domain-method-onGetDomains'>    onGetDomains: function (data) {
+</span>        this.systemSrv.completeTask(this.indexCheckRun);
+        this.addDomain(data);
+        this.inst.destroy();
+        this.inst = null;
+        this.fireEvent(&quot;onready&quot;);
+    },
+
+
+<span id='Nodext-http-Domain-method-getData'>    getData: function (name) {
+</span>        name = name.toUpperCase();
+        if (this.list[name]) {
+            var obj = {};
+            Nodext.apply(obj, this.list[name]);
+            return obj;
+        } else {
+            return false;
+        }
+    },
+<span id='Nodext-http-Domain-method-getDomain'>    getDomain: function (name) {
+</span>        if (name !== &quot;/&quot;) {
+            name = &#39;/&#39; + name.toUpperCase() + &#39;/&#39;;
+        }
+        name = name.toUpperCase();
+        if (this.list[name]) {
+            return this.list[name].domain;
+        } else {
+            return false;
+        }
+    },
+<span id='Nodext-http-Domain-method-getDomainById'>    getDomainById: function (id) {
+</span>        if (this.listId[id]) {
+            return this.listId[id].domain;
+        } else {
+            return false;
+        }
+    },
+<span id='Nodext-http-Domain-method-activeDomainById'>    activeDomainById: function (id) {
+</span>        if (this.listId[id] &amp;&amp; this.listId[id].swt_status === &#39;0&#39;) {
+            return true;
+        } else {
+            return false;
+        }
+    },
+<span id='Nodext-http-Domain-method-existDomainById'>    existDomainById: function (id) {
+</span>        if (this.listId[id]) {
+            return true;
+        } else {
+            return false;
+        }
+    },
+<span id='Nodext-http-Domain-method-getIdOrg'>    getIdOrg: function (name) {
+</span>        if (name !== &quot;/&quot;) {
+            name = &#39;/&#39; + name.toUpperCase() + &#39;/&#39;;
+        }
+        name = name.toUpperCase();
+        if (this.list[name]) {
+            return this.list[name].id_org;
+        } else {
+            return false;
+        }
+    },
+<span id='Nodext-http-Domain-method-addOrg'>    addOrg: function (data) {
+</span>        var response = [];
+        for (var x = 0; x &lt; data.length; x++) {
+            response.push({
+                id: data[x].id_org,
+                clientId: data[x].id_ext
+            });
+        }
+        this.addDomain(data);
+        return response;
+    },
+<span id='Nodext-http-Domain-method-updateOrg'>    updateOrg: function (data) {
+</span>        var item;
+        for (var x = 0; x &lt; data.length; x++) {
+            item = this.listId[data[x].id_org] || this.listId[data[x].id];
+            if (data[x].domain) {
+                delete this.list[&#39;/&#39; + item.domain.toUpperCase() + &#39;/&#39;];
+                this.list[&#39;/&#39; + data[x].domain.toUpperCase() + &#39;/&#39;] = item;
+            }
+            if (item) {
+                Nodext.copy(item, data[x], &quot;name,swt_status,short_name,domain&quot;);
+            }
+        }
+    },
+<span id='Nodext-http-Domain-method-deleteOrg'>    deleteOrg: function (data) {
+</span>        var item;
+        for (var x = 0; x &lt; data.length; x++) {
+            item = this.listId[data[x].id];
+            delete this.list[&#39;/&#39; + item.domain.toUpperCase() + &#39;/&#39;];
+            delete this.listId[data[x].id];
+            Nodext.destroyObject(item);
+        }
+    }
+});</pre>
+</body>
+</html>

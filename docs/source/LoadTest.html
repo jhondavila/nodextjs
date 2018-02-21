@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-test-LoadTest'>/**
+</span> * 
+ */
+Nodext.define(&quot;Nodext.test.LoadTest&quot;, {
+    extend: &quot;Ext.Base&quot;,
+<span id='Nodext-test-LoadTest-property-S-configPrefixed'>    $configPrefixed: false,
+</span><span id='Nodext-test-LoadTest-property-S-configStrict'>    $configStrict: false,
+</span>    config: {
+<span id='Nodext-test-LoadTest-cfg-headers'>        headers: null
+</span>    },
+<span id='Nodext-test-LoadTest-property-index'>    /**
+</span>     * 
+     */
+    index: -1,
+<span id='Nodext-test-LoadTest-property-defaults'>    defaults: null,
+</span><span id='Nodext-test-LoadTest-property-items'>    items: null,
+</span><span id='Nodext-test-LoadTest-method-constructor'>    constructor: function (config) {
+</span>        config = config || {};
+        Nodext.apply(this, config);
+        this.initConfig(config);
+        this.init();
+        this.headers = this.headers || {};
+        Nodext.apply(this.headers, {
+            &#39;Content-Type&#39;: &#39;application/x-www-form-urlencoded&#39;,
+            accept: &quot;text/plain;text/html&quot;,
+        });
+        this.items = this.items || [];
+        var item, tests = [], maxRequests, y, x, test;
+        for (x = 0; x &lt; this.items.length; x++) {
+            item = this.items[x] || {};
+            Nodext.apply(item, this.defaults || {});
+            item.headers = item.headers || {};
+            Nodext.apply(item.headers, this.headers);
+            maxRequests = item.maxRequests;
+            if (!Array.isArray(maxRequests)) {
+                maxRequests = [maxRequests];
+            }
+            for (y = 0; y &lt; maxRequests.length; y++) {
+                test = {
+                    maxRequests: maxRequests[y] || 10
+                };
+                Nodext.applyIf(test, item);
+                tests.push(test);
+            }
+        }
+        this.tests = tests;
+        item = tests = test = maxRequests = x = y = null;
+    },
+<span id='Nodext-test-LoadTest-method-init'>    init: Nodext.emptyFn,
+</span><span id='Nodext-test-LoadTest-method-next'>    next: function () {
+</span>        this.index++;
+        var item = this.tests[this.index];
+        if (item) {
+            return item;
+        } else {
+            return false;
+        }
+    }
+});</pre>
+</body>
+</html>

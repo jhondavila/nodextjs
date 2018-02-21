@@ -1,0 +1,18 @@
+{
+    "--output": "docs",
+    "--title": "Nodext",
+    "--exclude": [
+        "ext/src/all",
+        "ext/src/backupCore",
+        "overrides"
+    ],
+    "--builtin-classes": true,
+    "--": [
+        "./src",
+        "ext/src/core"
+    ],
+    "--ext-namespaces": [
+        "Ext",
+        "Nodext"
+    ]
+}

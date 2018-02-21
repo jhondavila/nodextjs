@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-socket-IO-Redis'>/**
+</span> * 
+ */
+Nodext.define(&quot;Nodext.socket.IO.Redis&quot;, {
+    extend: &quot;Ext.Base&quot;,
+    mixins: {
+        observable: &#39;Ext.util.Observable&#39;
+    },
+<span id='Nodext-socket-IO-Redis-property-S-configPrefixed'>    $configPrefixed: false,
+</span><span id='Nodext-socket-IO-Redis-property-S-configStrict'>    $configStrict: false,
+</span>    config: {
+<span id='Nodext-socket-IO-Redis-cfg-maxAttemptsRedis'>        /**
+</span>         * Maximo reintentos de conexion al servidor Redis 
+         */
+        maxAttemptsRedis: 3,
+<span id='Nodext-socket-IO-Redis-cfg-socketPort'>        /**
+</span>         * Puerto Socket el cual escuchara a los clientes
+         */
+        socketPort: 3000,
+<span id='Nodext-socket-IO-Redis-cfg-portInternal'>        /**
+</span>         * Puerto interno para la comunicacion entre procesos de otros Thread
+         */
+        portInternal: 0,
+<span id='Nodext-socket-IO-Redis-cfg-portRedis'>        /**
+</span>         * Puerto del servidor Redis
+         */
+        portRedis: 6379,
+<span id='Nodext-socket-IO-Redis-cfg-hostRedis'>        /**
+</span>         * Host del servidor Redis
+         */
+        hostRedis: &#39;localhost&#39;
+    },
+<span id='Nodext-socket-IO-Redis-property-redisAdapter'>    /**
+</span>     * @property {NodeInstance}
+     */
+    redisAdapter: null,
+<span id='Nodext-socket-IO-Redis-property-ioRedis'>    /**
+</span>     * @property {NodeModule} ioRedis
+     */
+    ioRedis: null,
+<span id='Nodext-socket-IO-Redis-property-starting'>    /**
+</span>     * Indica que el proceso de conexion con el servidor Redis a iniciado
+     * @private
+     */
+    starting: false,
+<span id='Nodext-socket-IO-Redis-property-countRcnxRedis'>    /**
+</span>     * Contandor de intentos fallidos con el servidor Redis
+     */
+    countRcnxRedis: 0,
+<span id='Nodext-socket-IO-Redis-cfg-redisActive'>    /**
+</span>     * @cfg {Array}
+     * @private
+     * Indica si se genero pubclient y subclient al momento de conectarse al servidor Redis, de
+     * esta manera nos aseguramos que el servidor este activo.
+     */
+    redisActive: null,
+<span id='Nodext-socket-IO-Redis-method-constructor'>    constructor: function (config) {
+</span>        config = config || {};
+        Nodext.apply(this, config);
+        this.initConfig(config);
+        this.mixins.observable.constructor.call(this, config);
+        try {
+            this.ioRedis = require(&#39;socket.io-redis&#39;);
+        } catch (e) {
+            this.ioRedis = null;
+            Nodext.logError(&quot;No se pudo cargar el modulo socket.io-redis&quot;);
+        }
+    },
+<span id='Nodext-socket-IO-Redis-method-connect'>    /**
+</span>     * @method
+     */
+    connect: function () {
+        this.starting = true;
+        this.redisActive = [&quot;pubclient&quot;, &quot;subclient&quot;];
+        this.redisAdapter = this.ioRedis({ host: this.hostRedis, port: this.portRedis });
+        this.hookRedis();
+    },
+<span id='Nodext-socket-IO-Redis-method-hookRedis'>    /**
+</span>     * @method
+     * @private
+     */
+    hookRedis: function () {
+        var me = this;
+        this.redisAdapter.pubClient.on(&quot;error&quot;, function (err) {
+            me.countRcnxRedis++;
+            if (me.countRcnxRedis &gt; me.maxAttemptsRedis &amp;&amp; me.starting) {
+                me.failConnectRedis();
+            }
+        });
+        this.redisAdapter.subClient.on(&quot;error&quot;, function (err) {
+            me.countRcnxRedis++;
+            if (me.countRcnxRedis &gt; me.maxAttemptsRedis &amp;&amp; me.starting) {
+                me.failConnectRedis();
+            }
+        });
+        this.redisAdapter.pubClient.on(&quot;connect&quot;, function () {
+            me.successRedis(&quot;pubclient&quot;);
+        });
+        this.redisAdapter.subClient.on(&quot;connect&quot;, function () {
+            me.successRedis(&quot;subclient&quot;);
+        });
+    },
+<span id='Nodext-socket-IO-Redis-method-failConnectRedis'>    /**
+</span>     * @method
+     * @private
+     */
+    failConnectRedis: function () {
+        this.starting = false;
+        this.redisAdapter.pubClient.end(true);
+        this.redisAdapter.subClient.end(true);
+<span id='Nodext-socket-IO-Redis-event-fail'>        /**
+</span>         * @event fail
+         * Se dispara cuando falla la conexion al servidor Redis
+         * @param {Nodext.socket.IO.Redis} this
+         * @param {String} hostRedis
+         * @param {Number} portRedis
+         */
+        this.fireEvent(&quot;fail&quot;, this, this.hostRedis, this.portRedis);
+    },
+<span id='Nodext-socket-IO-Redis-method-successRedis'>    /**
+</span>     * @method
+     * @private
+     */
+    successRedis: function (type) {
+        if (this.redisActive.indexOf(type) &gt; -1) {
+            this.redisActive[this.redisActive.indexOf(type)] = true;
+        }
+        var ready = true;
+        for (var x = 0; x &lt; this.redisActive.length; x++) {
+            if (this.redisActive[x] !== true) {
+                ready = false;
+            }
+        }
+        if (ready &amp;&amp; this.starting) {
+            this.starting = false;
+<span id='Nodext-socket-IO-Redis-event-success'>            /**
+</span>             * @event
+             * Se dispara cuando se conecta correctamente al servidor Redis
+             * @param {Nodext.socket.IO.Redis} this
+             * @param {String} hostRedis
+             * @param {Number} portRedis
+             */
+            this.fireEvent(&quot;success&quot;, this, this.hostRedis, this.portRedis, this.redisAdapter)
+        }
+    },
+});</pre>
+</body>
+</html>

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-BaseInstance'>/**
+</span> * 
+ */
+Nodext.define(&quot;Nodext.BaseInstance&quot;, {
+<span id='Nodext-BaseInstance-property-S-configStrict'>    $configStrict: false,
+</span><span id='Nodext-BaseInstance-property-S-configPrefix'>    $configPrefix: false,
+</span><span id='Nodext-BaseInstance-property-DBcnxName'>    /**
+</span>     * Nombre de la conexion DB a utilizar por defecto
+     */
+    DBcnxName: null,
+<span id='Nodext-BaseInstance-property-autoInit'>    /**
+</span>     * Habilita el cache BD para esta instancia de manera automatica
+     */
+    autoInit: false,
+<span id='Nodext-BaseInstance-property-DBErrorDestroy'>    /**
+</span>     * En caso de algun error relacionado con la BD se autodestruira esta instancia
+     */
+    DBErrorDestroy: false,
+<span id='Nodext-BaseInstance-property-autoCloseDB'>    /**
+</span>     * Cierre automatico de la conexion con la BD al finalizar la pila de consultas
+     */
+    autoCloseDB: true,
+<span id='Nodext-BaseInstance-property-DBActiveCnx'>    /**
+</span>    * @private
+    * Conexion Activa
+    */
+    DBActiveCnx: null,
+<span id='Nodext-BaseInstance-property-DBActiveCnxName'>    /**
+</span>     * @private
+     * Nombre de la conexion activa
+     */
+    DBActiveCnxName: null,
+<span id='Nodext-BaseInstance-property-DBCompiles'>    /**
+</span>     * @private
+     * Cache de compilaciones de BD
+     */
+    DBCompiles: null,
+<span id='Nodext-BaseInstance-property-DBCnx'>    /**
+</span>     * Lista de conexiones BD en uso por la instancia actual
+     */
+    DBCnx: null,
+<span id='Nodext-BaseInstance-property-DBScope'>    /**
+</span>     * DB Scope para consultas continuas
+     */
+    DBScope: null,
+<span id='Nodext-BaseInstance-method-constructor'>    constructor: function (config) {
+</span>        this.id = Nodext.id();
+        Nodext.apply(this, config);
+        if (this.autoInit) {
+            this.initBuild();
+        }
+    },
+<span id='Nodext-BaseInstance-method-initBuild'>    /**
+</span>     * @method
+     * @private
+     * Inicializa el cache de BD
+     */
+    initBuild: function () {
+        this.DBCompiles = [];
+        this.DBCnx = {};
+    },
+<span id='Nodext-BaseInstance-method-setActiveCnx'>    /**
+</span>     * @method
+     * Configura la conexion activa
+     */
+    setActiveCnx: function (DBcnxName, newCnx) {
+        DBcnxName = DBcnxName || this.DBcnxName;
+        if (this.DBCnx[DBcnxName]) {
+            this.DBActiveCnx = this.DBCnx[DBcnxName];
+            this.DBActiveCnxName = DBcnxName;
+            return this.DBActiveCnx;
+        } else {
+            var cnx = Nodext.db.Mgr.getCnx(DBcnxName);
+            if (cnx) {
+                cnx = cnx.newCnx();
+                if (newCnx) {
+                    DBcnxName = newCnx;
+                }
+                this.DBActiveCnx = cnx;
+                this.DBActiveCnxName = DBcnxName;
+                this.DBCnx[DBcnxName] = cnx;
+                return this.DBActiveCnx;
+            } else {
+                Nodext.logError(&quot;El nombre de la conexion &quot; + DBcnxName + &quot; no existe&quot;);
+                return false;
+            }
+        }
+    },
+<span id='Nodext-BaseInstance-method-destroyDBCnx'>    /**
+</span>     * @method
+     * Cierra la conexion activa
+     */
+    destroyDBCnx: function () {
+        var cnx, i;
+        for (i in this.DBCnx) {
+            cnx = this.DBCnx[i];
+            if (cnx &amp;&amp; !cnx.errorCnx) {
+                cnx.destroy();
+            } else if (cnx &amp;&amp; cnx.errorCnx) {
+                Nodext.logError(&quot;al parecer ocurrio un error al conectar a la base de datos &quot; + this.DBcnxName);
+                cnx.destroy();
+            } else {
+                if (cnx) {
+                    cnx.destroy();
+                }
+            }
+            this.DBCnx[i] = null;
+        }
+        this.DBCnx = this.DBActiveCnx = cnx = i = null;
+    },
+<span id='Nodext-BaseInstance-method-clearDBCompiles'>    /**
+</span>     * @method
+     * @private
+     * Limpia el cache de BD
+     */
+    clearDBCompiles: function () {
+        if (Array.isArray(this.DBCompiles)) {
+            for (var x = 0; x &lt; this.DBCompiles.length; x++) {
+                Nodext.destroy(this.DBCompiles[x]);
+                this.DBCompiles[x] = null;
+            }
+            Nodext.destroyArray(this.DBCompiles[x]);
+        }
+    },
+<span id='Nodext-BaseInstance-method-destroy'>    destroy: function () {
+</span>        this.destroyDBCnx();
+        this.clearDBCompiles();
+        this.callParent();
+        Nodext.destroyClass(this);
+        delete this;
+    },
+<span id='Nodext-BaseInstance-method-sendError'>    /**
+</span>     * @method
+     * @localdoc
+     * Envia la señal de error al cliente
+     */
+    sendError: function (err, code, log) {
+        if (log) {
+            Nodext.logError(err);
+        }
+        if (this.DBErrorDestroy) {
+            this.destroy();
+        }
+    }
+});</pre>
+</body>
+</html>

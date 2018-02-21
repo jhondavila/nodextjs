@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-model-Model'>/**
+</span> * 
+ */
+Nodext.define(&quot;Nodext.model.Model&quot;, {
+    extend: &quot;Ext.Base&quot;,
+    requires: [&quot;Nodext.database.QBManager&quot;],
+<span id='Nodext-model-Model-property-db'>    db: Nodext.database.QBManager,
+</span><span id='Nodext-model-Model-property-S-configPrefixed'>    $configPrefixed: false,
+</span><span id='Nodext-model-Model-method-constructor'>    constructor: function (config) {
+</span>        Nodext.apply(this, config);
+        this.initConfig(config);
+        this.initModel();
+    },
+<span id='Nodext-model-Model-method-initModel'>    initModel: Nodext.emptyFn
+</span>});</pre>
+</body>
+</html>

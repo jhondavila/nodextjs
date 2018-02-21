@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-http-controller-Instance'>/**
+</span> * 
+ */
+Nodext.define(&quot;Nodext.http.controller.Instance&quot;, {
+    extend: &quot;Nodext.BaseInstance&quot;,
+<span id='Nodext-http-controller-Instance-property-session'>    /**
+</span>     * Libreria Session del servidor
+     * @property {Nodext.http.session.Base}  session
+     * @private
+     */
+    session: null,
+<span id='Nodext-http-controller-Instance-property-orgDomain'>    /**
+</span>     * identificador del dominio al cual se hizo la solicitud
+     */
+    orgDomain: null,
+<span id='Nodext-http-controller-Instance-property-req'>    /**
+</span>     * HTTP request argument to the middleware function, called &quot;req&quot; by convention
+     */
+    req: null,
+<span id='Nodext-http-controller-Instance-property-res'>    /**
+</span>     * HTTP response argument to the middleware function, called &quot;res&quot; by convention
+     */
+    res: null,
+<span id='Nodext-http-controller-Instance-property-next'>    /**
+</span>     * Callback argument to the middleware function, called &quot;next&quot; by conventionsssss
+     */
+    next: null,
+
+<span id='Nodext-http-controller-Instance-property-token'>    /**
+</span>     * @deprecated
+     * Token de session
+     */
+    token: null,
+<span id='Nodext-http-controller-Instance-property-tokenDecoded'>    /**
+</span>     * @deprecated
+     * Token decodificada
+     */
+    tokenDecoded: null,
+<span id='Nodext-http-controller-Instance-property-controller'>    /**
+</span>     * Controller de la instancia
+     */
+    controller: null,
+    // params: null,
+<span id='Nodext-http-controller-Instance-property-cacheFilter'>    /**
+</span>     * Cache usado para filtros enviados en la peticion http
+     */
+    cacheFilter: null,
+<span id='Nodext-http-controller-Instance-property-cacheExtraFilter'>    /**
+</span>     * Cache usado para filtros adicionales enviados en la peticion http
+     */
+    cacheExtraFilter: null,
+<span id='Nodext-http-controller-Instance-method-getPost'>    /**
+</span>     * 
+     */
+    getPost: function () {
+        return this.req.body;
+    },
+<span id='Nodext-http-controller-Instance-method-getParams'>    /**
+</span>     * Devuelve los parametros enviados en la peticion http
+     */
+    getParams: function () {
+        var obj = {};
+        if (this.req.query) {
+            Nodext.apply(obj, this.req.query);
+        }
+        if (this.req.body) {
+            Nodext.apply(obj, this.req.body);
+        }
+        return obj;
+    },
+<span id='Nodext-http-controller-Instance-method-getParam'>    /**
+</span>     * Devuelve un parametro enviado en la peticion http
+     */
+    getParam: function (item) {
+        if (this.req.query &amp;&amp; this.req.query[item]) {
+            return this.req.query[item];
+        }
+        if (this.req.body &amp;&amp; this.req.body[item]) {
+            return this.req.body[item];
+        }
+        return;
+    },
+<span id='Nodext-http-controller-Instance-method-send'>    /**
+</span>     * Envia una respuesta http al cliente
+     */
+    send: function (data) {
+        var xml;
+        if (this.isDestroyed) {
+            Nodext.logError(&quot;Esta instacia ya ha respondido con un mensaje, no puede volver a responder -.-&quot;);
+            delete this;
+            return false;
+        }
+        if (this.req.accepts(&quot;application/json&quot;)) {
+            //            this.res.setHeader(&#39;Content-Type&#39;, &#39;text/html&#39;);
+            this.res.send(data);
+        } else if (this.req.accepts(&quot;text/xml&quot;)) {
+            this.res.header(&#39;Content-Type&#39;, &#39;text/xml&#39;);
+            xml = Nodext.EasyXML.easyxml.render(data);
+            this.res.send(xml);
+        } else if (this.req.accepts(&quot;text/plain&quot;)) {
+            this.res.send(data);
+        } else if (this.req.accepts(&quot;text/html&quot;)) {
+            this.res.send(data);
+        } else {
+            this.res.status(406).send(&#39;Not Acceptable&#39;);
+        }
+        data = xml = null;
+        this.res.end();
+        //        this.res.destroy();
+        this.destroy();
+    },
+<span id='Nodext-http-controller-Instance-method-sendErrorTokenExpired'>    /**
+</span>     * Envia una respuesta de session expirada al cliente
+     */
+    sendErrorTokenExpired: function () {
+        return this.sendError({
+            success: false,
+            message: &#39;Session expirada&#39;
+        }, 498);
+    },
+<span id='Nodext-http-controller-Instance-method-sendErrorToken'>    /**
+</span>     * Envia una respuesta de error en la session al cliente
+     */
+    sendErrorToken: function (err) {
+        if (err &amp;&amp; err.name === &quot;TokenExpiredError&quot;) {
+            return this.sendError({
+                success: false,
+                message: &#39;Session expirada&#39;
+            }, 498);
+        } else {
+            return this.sendError({
+                success: false,
+                message: &#39;No se encontro datos de la Session&#39;
+            }, 499);
+        }
+
+    },
+<span id='Nodext-http-controller-Instance-method-showError'>    /**
+</span>     * Envia un mensaje de error al cliente
+     */
+    showError: function (message) {
+        return this.sendError({
+            success: false,
+            message: message
+        }, 502);
+    },
+<span id='Nodext-http-controller-Instance-method-sendError'>    /**
+</span>     * Envia un mensaje de error de acuerdo al formato que pueda aceptar el cliente
+     */
+    sendError: function (message, code) {
+        console.log(message)
+        console.log(code)
+        console.log(&quot;sendError&quot;);
+        //        console.trace(&quot;SendError&quot;);
+        if (this.isDestroyed) {
+            Nodext.logError(&quot;Esta instacia ya ha respondido con un mensaje, no puede volver a responder -.-&quot;);
+            delete this;
+            return false;
+        }
+        //        this.sendRes = true;
+        var xml;
+        code = code || 500;
+        if (this.req.accepts(&quot;application/json&quot;)) {
+            this.res.status(code).send(message);
+        } else if (this.req.accepts(&quot;text/xml&quot;)) {
+            this.res.header(&#39;Content-Type&#39;, &#39;text/xml&#39;);
+            xml = Nodext.EasyXML.easyxml.render(message);
+            this.res.status(code).send(xml);
+        } else if (this.req.accepts(&quot;text/plain&quot;)) {
+            this.res.status(code).send(message);
+        } else if (this.req.accepts(&quot;text/html&quot;)) {
+            this.res.status(code).send(message);
+        } else {
+            this.this.res.status(406).send(&#39;Not Acceptable&#39;);
+        }
+        Nodext.destroy(message);
+        this.res.end();
+        this.destroy();
+        //        console.log(this);
+        message = xml = null;
+    },
+<span id='Nodext-http-controller-Instance-method-destroy'>    destroy: function () {
+</span>        this.callParent();
+        delete this;
+    },
+<span id='Nodext-http-controller-Instance-method-setSession'>    /**
+</span>     * Crea una session para el cliente
+     */
+    setSession: function (obj) {
+        return this.session ? this.session.setSession(this, obj) : false;
+    },
+<span id='Nodext-http-controller-Instance-method-destroySession'>    /**
+</span>     * Destruye la session de cliente
+     */
+    destroySession: function (fn) {
+        return this.session ? this.session.destroySession(this, fn) : false;
+    },
+<span id='Nodext-http-controller-Instance-method-exitsSession'>    /**
+</span>     * Valida que exista una session en la peticion http
+     */
+    exitsSession: function () {
+        return this.session ? this.session.exitsSession(this) : false;
+    },
+<span id='Nodext-http-controller-Instance-method-validateSession'>    /**
+</span>     * Valida que exista una session en la peticion http
+     */
+    validateSession: function () {
+        return this.session ? this.session.validateSession(this) : false;
+    },
+<span id='Nodext-http-controller-Instance-method-getValOfToken'>    /**
+</span>     * Obtiene los datos de la session actual
+     */
+    getValOfToken: function (key) {
+        return this.session ? this.session.getDataSession(this, key) : false;
+    },
+<span id='Nodext-http-controller-Instance-method-getOrgDomain'>    getOrgDomain: function () {
+</span>        if (!this.orgDomain) {
+            return false;
+        }
+        return this.orgDomain.name;
+    },
+<span id='Nodext-http-controller-Instance-method-getIdOrgDomain'>    getIdOrgDomain: function () {
+</span>        if (!this.orgDomain) {
+            return false;
+        }
+        return this.orgDomain.id;
+    }
+});</pre>
+</body>
+</html>

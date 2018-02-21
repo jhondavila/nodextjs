@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-http-controller-Controller'>/**
+</span> * 
+ */
+Nodext.define(&quot;Nodext.http.controller.Controller&quot;, {
+    extend: &quot;Ext.Base&quot;,
+    mixins: [&quot;Nodext.util.HookClass&quot;],
+    requires: [&quot;Nodext.http.controller.Script&quot;],
+<span id='Nodext-http-controller-Controller-property-S-configPrefixed'>    $configPrefixed: false,
+</span>    config: {
+<span id='Nodext-http-controller-Controller-cfg-load'>        /**
+</span>         * Lista de clases a vincular mediante un alias a este controlador
+         */
+        load: null,
+<span id='Nodext-http-controller-Controller-cfg-server'>        /**
+</span>         * Servidor del controller
+         */
+        server: null,
+<span id='Nodext-http-controller-Controller-cfg-router'>        /**
+</span>         * Router del controller
+         */
+        router: null,
+<span id='Nodext-http-controller-Controller-cfg-DBcnxName'>        /**
+</span>         * Nombre de la conexion BD por defecto a usar en la instacia 
+         */
+        DBcnxName: null,
+<span id='Nodext-http-controller-Controller-cfg-DBCnxAuto'>        /**
+</span>         * Habilita la conexion automatica a la BD para la instancia
+         */
+        DBCnxAuto: false,
+<span id='Nodext-http-controller-Controller-cfg-authUser'>        /**
+</span>         * Valida la session del usuario existente antes de continuar con la peticion http
+         */
+        authUser: false,
+<span id='Nodext-http-controller-Controller-cfg-disabledRequest'>        /**
+</span>         * Deshabilita toda url que atienda este controller
+         */
+        disabledRequest: false,
+<span id='Nodext-http-controller-Controller-cfg-disabledReqMsg'>        /**
+</span>         * Mensaje a emitir al cliente cuando el controller no atienda sus url
+         */
+        disabledReqMsg: &quot;la ruta se encuentra &lt;br&gt; actualmente deshabilitada&quot;,
+<span id='Nodext-http-controller-Controller-cfg-defaultHeaders'>        /**
+</span>         * Header por defecto ah añadir a la respuesta http 
+         */
+        defaultHeaders: {}
+    },
+<span id='Nodext-http-controller-Controller-property-isServerCtrl'>    /**
+</span>    * Indica si el controllador es parte de la aplicacion
+    */
+    isServerCtrl: true,
+<span id='Nodext-http-controller-Controller-property-methods'>    /**
+</span>     * Metodos habilitados para el controlador GET,POST,DELETE,PUT
+     */
+    methods: null,
+<span id='Nodext-http-controller-Controller-property-routes'>    /**
+</span>     * Rutas URL del controlador
+     */
+    routes: null,
+<span id='Nodext-http-controller-Controller-method-constructor'>    constructor: function (config) {
+</span>        Nodext.apply(this, config);
+        this.initConfig(config);
+        this.init();
+        this.script = Nodext.http.controller.Script;
+        this.methods = this.methods || [&quot;get&quot;, &quot;post&quot;, &quot;delete&quot;, &quot;put&quot;];
+        this.routes = this.routes || {};
+        this.router = this.server.router;
+        this.hookLoad();
+        if (this.isServerCtrl) {
+            this.initPathMethod();
+        }
+    },
+<span id='Nodext-http-controller-Controller-method-getClassOfMgr'>    getClassOfMgr: function (g, cls) {
+</span>        return this.server.getClassOfMgr(g, cls);
+    },
+<span id='Nodext-http-controller-Controller-method-init'>    /**
+</span>     * @template
+     * @method
+     */
+    init: Nodext.emptyFn,
+<span id='Nodext-http-controller-Controller-method-escapeUrl'>    /**
+</span>     * @method
+     * @private
+     */
+    escapeUrl: function (string) {
+        return string.replace(/[-\/\\^$*+?.()|[\]{}]/g, &#39;\\$&amp;&#39;);
+    },
+<span id='Nodext-http-controller-Controller-method-initPathMethod'>    /**
+</span>     * @method
+     * @private
+     * Inicializa la creacion de enrutadores para esta clase
+     */
+    initPathMethod: function () {
+        if (!Nodext.isObject(this.routes)) {
+            return false;
+        }
+        var x, method;
+        if (!Array.isArray(this.methods)) {
+            this.methods = [this.methods];
+        }
+        for (var x = 0; x &lt; this.methods.length; x++) {
+            method = this.methods[x];
+            if (Nodext.isObject(this.routes[method])) {
+                this.createMethod(method, this.routes[method])
+            }
+        }
+    },
+<span id='Nodext-http-controller-Controller-method-createMethod'>    /**
+</span>     * @method
+     * @private
+     * Crea los path de un determinado metodo
+     */
+    createMethod: function (method, routes) {
+        var key, route;
+        var fns = [], fn, regex, url;
+        for (key in routes) {
+            this.addPath(method, key, routes[key]);
+        }
+    },
+<span id='Nodext-http-controller-Controller-method-_defaultPath'>    /**
+</span>     * @method
+     * @private
+     * Funcion por defecto en caso de no encontrar la funcion configurada
+     */
+    _defaultPath: function (inst) {
+        inst.send({
+            message: &quot;Default Response, no path Function Resolve&quot;
+        })
+    },
+<span id='Nodext-http-controller-Controller-method-pathMount'>    /**
+</span>     * @method
+     * Monta un enrutador limpio en el servidor, el cual respondera al cliente con las funciones configuradas.
+     * 
+     * Si utiliza la opcion &quot;initMount&quot; esta se ejecutara y debe devolver una funcion o un arreglo de funciones
+     * encargadas de responder al cliente. Esto es muy util en caso que necesite inicializar algunas variables 
+     * para su route.
+     * 
+     *      Nodext.define(&quot;MyApp.controllers.MiRouter&quot;,{
+     *          extends : &quot;Nodext.http.controller.Controller&quot;,
+     *          routes : {
+     *              &#39;inicio&#39; : {
+     *                  initMount : &#39;initMyPath&#39;
+     *              }
+     *          },
+     *          initMyPath : function() {
+     *              var cont = 0;
+     *              var fn = function(req,res,next){
+     *                  cont++;
+     *                  res.send({
+     *                      message : &quot;La pagina ha sido visitada &quot;+ cont;
+     *                  });
+     *              };
+     *              return fn;
+     *          }
+     *      });
+     * 
+     *      //Tambien puede devolver un arreglo con el nombre de las funciones a utilizar.
+     *      Nodext.define(&quot;MyApp.controllers.MiRouter&quot;,{
+     *          extends : &quot;Nodext.http.controller.Controller&quot;,
+     *          routes : {
+     *              get : {
+     *                  &#39;inicio&#39; : {
+     *                      initMount : &#39;initMyPath&#39;
+     *                  }              
+     *              }
+     *          },
+     *          initMyPath : function() {
+     *              var me = this;
+     *              me.cont = 0;
+     *              var fn = function(req,res,next){
+     *                  me.cont++;
+     *                  next();
+     *              };
+     *              return [fn,&quot;responseClient&quot;];
+     *          },
+     *          responseClient : function(){
+     *              res.send({
+     *                  message : &quot;La pagina ha sido visitada &quot;+ this.cont
+     *              });
+     *          }
+     *      });
+     * 
+     * Si solo desea montar una serie de funciones sin inicializar ninguna variable puede utilizar 
+     * &quot;mount&quot; el cual acepta funciones o arreglo de funciones.
+     * 
+     *      Nodext.define(&quot;MyApp.controllers.MiRouter&quot;,{
+     *          extends : &quot;Nodext.http.controller.Controller&quot;,
+     *          routes : {
+     *              get : {
+     *                  &#39;inicio&#39; : {
+     *                      mount : [&quot;incrementCount&quot;,&quot;responseClient&quot;]
+     *                  }              
+     *              }
+     *          },
+     *          incrementCount : function(req,res,next){
+     *              this.cont = this.cont || 0;
+     *              this.cont++;
+     *              next();
+     *          },
+     *          responseClient : function(){
+     *              res.send({
+     *                  message : &quot;La pagina ha sido visitada &quot;+ this.cont
+     *              });
+     *          }
+     *      });
+     *      
+     * 
+     */
+    pathMount: function (method, path, config) {
+        var mount, initMount, fn;
+        if (Nodext.isString(config.initMount)) {
+            initMount = this[config.initMount];
+            mount = initMount.call(this, config, this, this.server);
+        } else if (Nodext.isFunction(config.initMount)) {
+            initMount = config.initMount;
+            mount = initMount.call(this, config, this, this.server);
+        }
+
+        mount = mount || config.mount;
+        if (mount) {
+            if (!Array.isArray(mount)) {
+                mount = [mount];
+            }
+            var id = Nodext.id(&quot;CtrlPath-&quot;);;
+            for (var x = 0; x &lt; mount.length; x++) {
+                if (Nodext.isString(mount[x])) {
+                    if (this[mount[x]]) {
+                        mount[x] = this[mount[x]];
+                    } else {
+                        Nodext.logWarn(&quot;No found function to mount : ==&gt;&quot; + mount[x] + &quot;&lt;== in controller &quot; + Nodext.getClassName(this));
+                        mount[x] = this._defaultPath;
+                    }
+                }
+                if (!Nodext.isFunction(mount[x])) {
+                    Nodext.logWarn(&quot;Mount single accept function, check path ==&gt;&quot; + path + &quot;&lt;== in controller &quot; + Nodext.getClassName(this));
+                    mount[x] = this._defaultPath;
+                }
+
+                if (mount[x]._id) {
+                    Nodext.addPropToFn(mount[x], {
+                        name: &quot;ctrl.path&quot;,
+                        _id: id,
+                        _type: &quot;ctrlpath&quot;,
+                        _subType: &quot;pathmount&quot;,
+                        _controller: this
+                    }, { configurable: true });
+                }
+            }
+            this.router[method](path, mount);
+            return true;
+        } else {
+            Nodext.logWarn(&quot;No mount function ==&gt;&quot; + path + &quot;&lt;== in controller &quot; + Nodext.getClassName(this) + &quot;\n&quot; +
+                &quot;Check initMount and mount return Function or Array[Functions]&quot;);
+            return false;
+        }
+    },
+<span id='Nodext-http-controller-Controller-method-pathInst'>    /**
+</span>     * @method
+     * Monta un enrutador el cual realiza una validacion previa de controlador,session cuando
+     * hay una solicitud http. Despues es esta previa validacion, la funcion configurada es llamada.A esta funcion
+     * se la pasara el parametro inst.
+     * 
+     *      //Montar un route basico
+     *      Nodext.define(&quot;MyApp.controllers.MiRouter&quot;,{
+     *          extends : &quot;Nodext.http.controller.Controller&quot;,
+     *          routes : {
+     *              get : {
+     *                  &#39;inicio&#39; : &#39;responseClient&#39;             
+     *              }
+     *          },
+     *          responseClient : function(){
+     *              this.cont = this.cont || 0;
+     *              this.cont++;
+     *              res.send({
+     *                  message : &quot;La pagina ha sido visitada &quot;+ this.cont
+     *              });
+     *          }
+     *      });
+     * 
+     * 
+     *      //Si desea validar que el usuario este autentificado
+     *      Nodext.define(&quot;MyApp.controllers.MiRouter&quot;,{
+     *          extends : &quot;Nodext.http.controller.Controller&quot;,
+     *          routes : {
+     *              get : {
+     *                  &#39;inicio&#39; : {
+     *                      fn : &#39;responseClient&#39;,
+     *                      authUser : true
+     *                  }             
+     *              }
+     *          },
+     *          responseClient : function(){
+     *              this.cont = this.cont || 0;
+     *              this.cont++;
+     *              res.send({
+     *                  message : &quot;La pagina ha sido visitada &quot;+ this.cont
+     *              });
+     *          }
+     *      });
+     * 
+     *      //En caso necesite un path con soporte regExp puede especificar la variable path
+     *      Nodext.define(&quot;MyApp.controllers.MiRouter&quot;,{
+     *          extends : &quot;Nodext.http.controller.Controller&quot;,
+     *          routes : {
+     *              get : {
+     *                  &#39;inicio&#39; : {
+     *                      path : /\/inicio/g,
+     *                      fn : &#39;responseClient&#39;,
+     *                      authUser : true
+     *                  }             
+     *              }
+     *          },
+     *          responseClient : function(inst){
+     *              this.cont = this.cont || 0;
+     *              this.cont++;
+     *              inst.send({
+     *                  message : &quot;La pagina ha sido visitada &quot;+ this.cont
+     *              });
+     *          }
+     *      });
+     * 
+     * **Nota:** A diferencia del metodo {@link #pathMount} que carga un route limpio, la otra 
+     * principal diferencia es que a la funcion configurada solo se le pasara el parametro inst,
+     * sin embargo desde este parametro puede acceder a los parametros req,res en caso que los necesite.
+     */
+    pathInst: function (method, path, config) {
+        var fnName, fn, fnHandler;
+
+        fnName = Nodext.isString(config.fn) ? config.fn : undefined;
+        if (Nodext.isFunction(config.fn)) {
+            fn = config.fn;
+        } else {
+            if (this[fnName]) {
+                fn = this[fnName];
+            } else {
+                fn = this._defaultPath;
+                Nodext.logWarn(&quot;No found function ==&gt;&quot; + fnName + &quot;&lt;== in controller &quot; + Nodext.getClassName(this));
+            }
+        }
+        fnHandler = this.routeHandler.bind(undefined, {
+            path: path,
+            config: config,
+            fn: fn,
+            controller: this
+        });
+        var id = Nodext.id(&quot;CtrlPath-&quot;);
+        Nodext.addPropToFn(fnHandler, {
+            name: &quot;ctrl.path&quot;,
+            _id: id,
+            _type: &quot;ctrlpath&quot;,
+            _subType: &quot;pathinst&quot;,
+            _controller: this
+        }, { configurable: true });
+        this.router[method](path, fnHandler);
+        return true;
+    },
+<span id='Nodext-http-controller-Controller-method-addPath'>    /**
+</span>     * @method
+     * Añade un metodo de enrutamiento HTTP el cual respondera ejecutando una o mas funciones.
+     * Los metodos comunes son get,post,put,delete. Tambien se puede configurar otros tipos de metodo
+     * de acuerdo usted necesite.
+     * 
+     * Lista de los metodos son soportados :
+     * 
+     *  - `get`
+     *  - `post`
+     *  - `put`
+     *  - `head`
+     *  - `delete`
+     *  - `options`
+     *  - `trace`
+     *  - `copy`
+     *  - `lock`
+     *  - `mkcol`
+     *  - `move`
+     *  - `purge`
+     *  - `propfind`
+     *  - `proppatch`
+     *  - `unlock`
+     *  - `report`
+     *  - `mkactivity`
+     *  - `checkout`
+     *  - `merge`
+     *  - `m-search`
+     *  - `notify`
+     *  - `subscribe`
+     *  - `unsubscribe`
+     *  - `patch`
+     *  - `search`
+     *  - `connect`
+     * 
+     * @param {String} method
+     * @param {String|RegExp} path
+     * @param {String|Object} config
+     * @param {String|Function} [config.fn]
+     * @param {Boolean} [config.authUser]
+     * @param {String|Function} [config.initMount]
+     * @param {Array|Function} [config.mount]
+     * 
+     * 
+     */
+    addPath: function (method, path, config) {
+        if (Nodext.isObject(config) &amp;&amp; config.path) {
+            path = config.path;
+        }
+        if (typeof path === &quot;string&quot;) {
+            // path = this.escapeUrl(path);
+            if (path.indexOf(&quot;/&quot;) !== 0) {
+                path = &quot;/&quot; + path;
+            }
+        }
+        if (typeof config === &quot;string&quot;) {
+            return this.pathInst(method, path, { fn: config });
+        } else if (Nodext.isObject(config)) {
+            if (config.mount || config.initMount) {
+                return this.pathMount(method, path, config);
+            } else {
+                return this.pathInst(method, path, config);
+            }
+        } else {
+            return false;
+        }
+    },
+<span id='Nodext-http-controller-Controller-method-routeHandler'>    /**
+</span>     * @method
+     * @private
+     */
+    routeHandler: function (params, req, res, next) {
+        var ctrl = params.controller,
+            fnConfig = params.config,
+            fn = params.fn,
+            server = ctrl.server || {},
+            inst = ctrl.newInstance(req, res);
+
+        if (ctrl.disabledRequest) {
+            inst.sendError({
+                success: false,
+                message: ctrl.disabledReqMsg || &quot;la ruta se encuentra &lt;br&gt; actualmente deshabilitada&quot;
+            });
+            inst = req = res = null;
+            return false;
+        }
+
+        var authUser;
+
+        if (typeof fnConfig === &quot;string&quot;) {
+            authUser = ctrl.getAuthUser();
+        } else if (Nodext.isObject(fnConfig)) {
+            authUser = typeof fnConfig.authUser === &quot;boolean&quot; ? fnConfig.authUser : ctrl.getAuthUser();
+        }
+
+        if (authUser &amp;&amp; server.session) {
+            server.session.authenticate(inst, ctrl, fn);
+        } else {
+
+            inst.initBuild();
+            fn ? fn.call(ctrl, inst) : inst.sendError({
+                success: false,
+                message: &quot;Ruta no configurada/acceso denegado&quot;
+            });
+        }
+        ctrl = fnConfig = server = inst = authUser = null;
+    },
+<span id='Nodext-http-controller-Controller-method-newInstance'>    /**
+</span>     * @method
+     */
+    newInstance: function (req, res) {
+        return Ext.create(&quot;Nodext.http.controller.Instance&quot;, {
+            orgDomain: req.orgDomain || undefined,
+            req: req,
+            res: res,
+            controller: this,
+            DBScope: this,
+            session: this.server.session,
+            ctrl: this,
+            DBcnxName: this.DBcnxName,
+            DBCnxAuto: this.DBCnxAuto,
+        });
+    },
+<span id='Nodext-http-controller-Controller-method-newBaseInst'>    newBaseInst: function (options) {
+</span>        var cfg = {
+            controller: this,
+            ctrl: this,
+            DBScope: this,
+            autoInit: true,
+            DBErrorDestroy: true,
+            DBcnxName: this.DBcnxName,
+            DBCnxAuto: this.DBCnxAuto,
+        };
+        Nodext.apply(cfg, options);
+        return Ext.create(&quot;Nodext.BaseInstance&quot;, cfg);
+    },
+<span id='Nodext-http-controller-Controller-method-parseMd5'>    /**
+</span>     * Codifica una cadena al formato MD5
+     */
+    parseMd5: function (string) {
+        try {
+            return Nodext.Crypto.createHashMD5(string);
+        } catch (e) {
+            return null;
+        }
+    },
+<span id='Nodext-http-controller-Controller-method-getOrgDomain'>    getOrgDomain: function () {
+</span>        return this.server.domain ? this.server.domain : null;
+    }
+});</pre>
+</body>
+</html>

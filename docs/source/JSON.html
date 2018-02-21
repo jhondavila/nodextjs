@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-JSON'>/**
+</span> * @class Nodext.JSON
+ * @singleton 
+ */
+Nodext.JSON = {
+<span id='Nodext-JSON-method-decode'>    /**
+</span>     * @method decode
+     * Decodifica una cadena a un objeto. Si el JSON es invalido y safe en &#39;true&#39; retorna null.
+     * @param json
+     * @param safe
+     * @return {Object}
+     */
+    decode: function (json, safe) {
+        try {
+            return JSON.parse(json);
+        } catch (e) {
+            if (safe) {
+                return null;
+            }
+        }
+    },
+<span id='Nodext-JSON-method-encode'>    /**
+</span>     * @method encode
+     * Encodifica un objeto,array u otro valor.
+     * @param o
+     * @return {String}
+     */
+    encode: function (o) {
+        return JSON.stringify(o);
+    }
+};</pre>
+</body>
+</html>

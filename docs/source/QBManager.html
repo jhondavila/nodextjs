@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-database-QBManager'>/**
+</span> * 
+ */
+Nodext.define(&quot;Nodext.database.QBManager&quot;, {
+    extend: &quot;Ext.Base&quot;,
+<span id='Nodext-database-QBManager-property-S-configPrefixed'>    // requires: [&quot;Nodext.database.Manager&quot;],
+</span>    $configPrefixed: false,
+    singleton: true,
+<span id='Nodext-database-QBManager-method-constructor'>    constructor: function (config) {
+</span>        Nodext.apply(this, config);
+        this.initConfig(config);
+    },
+<span id='Nodext-database-QBManager-property-getQB'>    // getQB: Nodext.emptyFn,
+</span>    getQB: Nodext.db.Mgr.getQBInst.bind(Nodext.db.Mgr),
+<span id='Nodext-database-QBManager-method-query'>    query: function (inst, query, fn, run) {
+</span>        var qb = this.getQB(inst);
+        if (!qb) {
+            return;
+        }
+        var compile = qb.queryCompile(inst, query);
+        if (typeof run === &quot;undefined&quot; || run === true) {
+            var config = {
+                results: compile,
+                callback: fn
+            };
+            qb.initQuery(inst, config);
+        } else {
+            return compile;
+        }
+        qb = query = compile = null;
+    },
+<span id='Nodext-database-QBManager-method-compile'>    compile: function (inst, params2) {
+</span>        var qb = this.getQB(inst);
+        if (!qb) {
+            return;
+        }
+        var q, qCfg;
+        if (Nodext.isObject(params2)) {
+            qCfg = params2;
+            q = qb.compileQueryObject(inst, params2);
+        } else if (Nodext.isArray(params2) &amp;&amp; params2.length &gt; 0) {
+            qCfg = params2[0];
+            q = qb.compileQueryObject(inst, params2[0]);
+        }
+        if (q) {
+            if (qCfg &amp;&amp; qCfg.debug) {
+                console.log(&#39;-----------Debug Compile-------------&#39;);
+                console.log(q);
+                console.log(&#39;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;End Debug Compile&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&#39;);
+            }
+            qb = qCfg = null;
+            return q;
+        } else {
+            qb = qCfg = null;
+            return;
+        }
+    },
+<span id='Nodext-database-QBManager-method-compileQuerys'>    compileQuerys: function (inst, params2, params3) {
+</span>        var qb = this.getQB(inst);
+        if (!qb) {
+            return;
+        }
+        if ((!Nodext.isArray(params2) &amp;&amp; !Nodext.isObject(params2))) {
+            return;
+        }
+        var compile = [], q;
+        if (!Nodext.isArray(params2)) {
+            params2 = [params2];
+        }
+        for (var x = 0; x &lt; params2.length; x++) {
+            q = qb.compileQueryObject(inst, params2[x]);
+            if (q) {
+                compile.push(q);
+            }
+        }
+        Nodext.destroyArray(params2);
+        params2 = qb = null;
+        if (!params3) {
+            return compile;
+        } else if (params3.tpl) {
+            q = Ext.String.format.apply(null, [(Array.isArray(params3.tpl) ? params3.tpl.join(&quot;\n&quot;) : params3.tpl)].concat(compile));
+            Nodext.destroyClass(params3);
+            return q;
+        }
+    },
+<span id='Nodext-database-QBManager-method-get'>    get: function (inst, params2, params3) {
+</span>        var qb = this.getQB(inst);
+        if (!qb) {
+            return;
+        }
+        if (!Nodext.isFunction(params3)) {
+            console.trace(&quot;No existe callback / revise los objetos enviados&quot;);
+            return;
+        }
+
+        var results = [], fn, buildQuery = false;
+        fn = params3;
+        if (Nodext.isObject(params2) || Nodext.isArray(params2)) {
+            qb.prepareQueryObject(inst, params2, results);
+        }
+        qb.initQuery(inst, {
+            results: results,
+            callback: params3
+        });
+        qb = results = buildQuery = null;
+    },
+<span id='Nodext-database-QBManager-method-getResults'>    getResults: function (inst, querys, qb) {
+</span>        qb = qb || this.getQB(inst);
+        if (!qb) {
+            return;
+        }
+        return qb.getResults(inst, querys);
+    },
+
+<span id='Nodext-database-QBManager-method-execute'>    execute: function (inst, params, fn) {
+</span>        var qb = this.getQB(inst);
+        if (!qb) {
+            return;
+        }
+        var config = Nodext.isObject(params) &amp;&amp; params.querys ? params : {};
+        if (Array.isArray(params)) {
+            config.querys = params;
+        } else if (Nodext.isObject(params) &amp;&amp; !params.querys) {
+            config.querys = [params];
+        }
+        config.callback = config.callback || fn;
+        if (!config.callback) {
+            Ext.destroyObject(params);
+            inst.sendError({
+                success: false,
+                message: qb.msgError || &#39;No se proporciono el metodo de rellamado&#39;
+            });
+            return false;
+        }
+        var results = qb.getResults(inst, config.querys, qb);
+        config.results = results;
+        qb.initQuery(inst, config);
+        results = params = null;
+    },
+});</pre>
+</body>
+</html>

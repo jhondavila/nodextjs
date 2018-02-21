@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-database-postgre-Builder'>/**
+</span> * 
+ */
+Nodext.define(&quot;Nodext.database.postgre.Builder&quot;, {
+    extend: &quot;Nodext.database.query.Builder&quot;,
+    alias: &quot;qb.postgre&quot;,
+<span id='Nodext-database-postgre-Builder-property-type'>    type: &quot;postgre&quot;,
+</span>    alternateClassName: [&quot;Nodext.querybuilder.Postgre&quot;, &quot;Nodext.qb.Postgre&quot;],
+    // singleton: true,
+    config: {
+<span id='Nodext-database-postgre-Builder-cfg-reservedIdentifiers'>        reservedIdentifiers: [&#39;*&#39;, &#39;CURRENT_DATE&#39;, &#39;::text&#39;, &#39;::date&#39;,&#39;::integer&#39;]
+</span>    },
+<span id='Nodext-database-postgre-Builder-method-constructor'>    constructor: function (config) {
+</span>        Nodext.apply(this, config || {});
+        this.callParent(arguments);
+    },
+<span id='Nodext-database-postgre-Builder-method-_limit'>    _limit: function (QBI, sql) {
+</span>        return sql + &#39; LIMIT &#39; + QBI.qb_limit + (QBI.qb_offset ? &#39; OFFSET &#39; + QBI.qb_offset : &#39;&#39;);
+    },
+<span id='Nodext-database-postgre-Builder-method-createRSTrans'>    createRSTrans: function (inst, cfgQuery) {
+</span>        var cfg = {};
+        Nodext.apply(cfg, cfgQuery);
+        cfg.inst = inst;
+        cfg.qb = this;
+        return Ext.create(&quot;Nodext.database.action.Transaction&quot;, cfg);
+    },
+<span id='Nodext-database-postgre-Builder-method-createResult'>    createResult: function (inst, cfgQuery) {
+</span>        var cfg = {};
+        Nodext.apply(cfg, cfgQuery);
+        cfg.inst = inst;
+        cfg.qb = this;
+        return Ext.create(&quot;Nodext.database.action.Read&quot;, cfg);
+    },
+<span id='Nodext-database-postgre-Builder-method-createRsInsert'>    createRsInsert: function (inst, cfgQuery) {
+</span>        var cfg = {};
+        Nodext.apply(cfg, cfgQuery);
+        cfg.inst = inst;
+        cfg.qb = this;
+        return Ext.create(&quot;Nodext.database.action.Insert&quot;, cfg);
+    },
+<span id='Nodext-database-postgre-Builder-method-createRsForge'>    createRsForge: function (inst, cfgQuery) {
+</span>        var cfg = {};
+        Nodext.apply(cfg, cfgQuery);
+        cfg.inst = inst;
+        cfg.qb = this;
+        return Ext.create(&quot;Nodext.database.action.Forge&quot;, cfg);
+    },
+<span id='Nodext-database-postgre-Builder-method-createRsUpdate'>    createRsUpdate: function (inst, cfgQuery) {
+</span>        var cfg = {};
+        Nodext.apply(cfg, cfgQuery);
+        cfg.inst = inst;
+        cfg.qb = this;
+        return Ext.create(&quot;Nodext.database.action.Update&quot;, cfg);
+    },
+<span id='Nodext-database-postgre-Builder-method-createRsDelete'>    createRsDelete: function (inst, cfgQuery) {
+</span>        var cfg = {};
+        Nodext.apply(cfg, cfgQuery);
+        cfg.inst = inst;
+        cfg.qb = this;
+        return Ext.create(&quot;Nodext.database.action.Delete&quot;, cfg);
+    }
+});</pre>
+</body>
+</html>

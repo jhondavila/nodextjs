@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-database-action-Read'>/**
+</span> * 
+ */
+Nodext.define(&quot;Nodext.database.action.Read&quot;, {
+    extend: &quot;Nodext.database.action.Base&quot;,
+    alias: &#39;dbaction.read&#39;,
+<span id='Nodext-database-action-Read-cfg-action'>    action: &quot;read&quot;,
+</span>    config: {
+<span id='Nodext-database-action-Read-cfg-queryObject'>        queryObject: null,
+</span><span id='Nodext-database-action-Read-cfg-requireCompile'>        requireCompile: true,
+</span><span id='Nodext-database-action-Read-cfg-compileReady'>        compileReady: false,
+</span>    },
+<span id='Nodext-database-action-Read-method-init'>    init: function () {
+</span>        if (this.requireCompile) {
+            this.compileQuery();
+        } else {
+            this.compileReady = true;
+        }
+    },
+<span id='Nodext-database-action-Read-method-compileQuery'>    compileQuery: function () {
+</span>        var me = this;
+        this.qb.applyBasicCompile(this.queryObject);
+        this.query = this.qb._compile_select(this.queryObject.QB);
+        this.setQuery(this.query);
+        me.compileReady = true;
+    },
+<span id='Nodext-database-action-Read-method-getData'>    getData: function () {
+</span>        return this.result &amp;&amp; this.result.rows ? this.result.rows : null;
+    },
+<span id='Nodext-database-action-Read-method-getRow'>    getRow: function () {
+</span>        return (this.result.rows &amp;&amp; this.result.rows[0]) ? this.result.rows[0] : null;
+    },
+<span id='Nodext-database-action-Read-method-getTotal'>    getTotal: function (key) {
+</span>        var total = 0;
+        key = key || &quot;count&quot;;
+        if (this.result &amp;&amp; this.result.rows &amp;&amp; this.result.rows[0] &amp;&amp; this.result.rows[0][key]) {
+            total = parseInt(this.result.rows[0][key]);
+        }
+        key = null;
+        return total;
+    },
+<span id='Nodext-database-action-Read-method-numRows'>    numRows: function () {
+</span>        return this.result.rowCount;
+    },
+<span id='Nodext-database-action-Read-method-getFields'>    getFields: function () {
+</span>        return this.result.fields;
+    },
+<span id='Nodext-database-action-Read-method-destroy'>    destroy: function () {
+</span>        Nodext.destroy(this.queryObject);
+        if (this.result) {
+            Nodext.destroyArray(this.result.rows, this.result.fields);
+        }
+        Nodext.destroyClass(this.result);
+        this.callParent();
+        Nodext.destroyClass(this);
+        delete this;
+    }
+
+});</pre>
+</body>
+</html>

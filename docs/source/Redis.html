@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-app-master-Redis'>/**
+</span> * 
+ */
+Nodext.define(&quot;Nodext.app.master.Redis&quot;, {
+    extend: &quot;Ext.Base&quot;,
+
+    mixins: {
+        observable: &#39;Ext.util.Observable&#39;
+    },
+<span id='Nodext-app-master-Redis-property-S-configPrefixed'>    $configPrefixed: false,
+</span><span id='Nodext-app-master-Redis-property-S-configStrict'>    $configStrict: false,
+</span>    config: {
+    },
+<span id='Nodext-app-master-Redis-property-netSrvList'>    /**
+</span>     * @property {Object} netSrvList
+     * Lista de NetServerActivos
+     */
+    netSrvList: null,
+<span id='Nodext-app-master-Redis-property-netSocket'>    /**
+</span>     * @property {Ext.util.Collection} netSocket
+     * Lista de Socket Workers Activos
+     */
+    netSocket: null,
+<span id='Nodext-app-master-Redis-property-listListen'>    /**
+</span>     * @property {Object} listListen
+     * Lista de Cluster escuchando
+     */
+    listListen: null,
+<span id='Nodext-app-master-Redis-property-net'>    /**
+</span>    * @property {NodeModule} net
+    * Carga la Libreria net de NodeJS, esta libreria nos permitira crear un servidor net el cual redireccionara
+    * las solicitudes TCP/IPC entrantes (Conexiones Socket) a los workers.
+    */
+    net: null,
+<span id='Nodext-app-master-Redis-method-listenCluster'>    /**
+</span>     * @method listenCluster
+     * Añade listeners al cluster para identificar que worker soliciten redis.
+     */
+    listenCluster: function (cluster) {
+        if (cluster) {
+            this.listListen[cluster.getId()] = {
+                cluster: cluster,
+                listeners: cluster.on({
+                    destroyable: true,
+                    socketbyredis: this.socketByRedis,
+                    scope: this
+                })
+            };
+        }
+    },
+<span id='Nodext-app-master-Redis-method-unlistenCluster'>    /**
+</span>     * @method unlistenCluster
+     * Desvincula los listeners añadidos al cluster.
+     */
+    unlistenCluster: function (cluster) {
+        var obj = this.listListen[cluster.getId()];
+        if (obj) {
+            obj.listeners.destroy();
+            obj.cluster = null;
+        }
+    },
+<span id='Nodext-app-master-Redis-method-constructor'>    constructor: function (config) {
+</span>        this.net = require(&#39;net&#39;);
+        this.netSocket = {};
+        this.netSrvList = {};
+        this.listListen = {};
+        Nodext.apply(this, config);
+        this.initConfig(config);
+        this.mixins.observable.constructor.call(this, config);
+
+    },
+<span id='Nodext-app-master-Redis-method-socketByRedis'>    /**
+</span>     * @method socketByRedis
+     * Añade al thread que solicito una conexion redis a una lista netSocket, la cual permitira 
+     * balancear la carga de conexion Socket entrantes
+     * @private
+     * @param cluster Cluster que disparo el evento
+     * @param pid Pid del Treah solicitante de redis 
+     * @param idCluster Id del cluster
+     * @param idThread Id del Trhead solicitante de redis
+     * @param portInternal Puerto Interno
+     * @param portListen Puerto con salida externa
+     */
+    socketByRedis: function (cluster, pid, idCluster, idThread, portInternal, portListen) {
+        // console.log(idCluster)
+        var wpCluster = this.listListen[idCluster];
+        if (!wpCluster) {
+            return;
+        }
+
+        var cluster = wpCluster.cluster;
+        var thread = cluster.workers.get(idThread);
+        if (!thread) {
+            return;
+        }
+
+        var wSocket = this.netSocket[portListen];
+        if (!wSocket) {
+            this.netSocket[portListen] = Nodext.create(&quot;Ext.util.Collection&quot;, {
+                keyFn: function (item) {
+                    return item.equip + &quot;#&quot; + item.getPid();
+                }
+            });
+            wSocket = this.netSocket[portListen];
+        }
+
+        wSocket.add(thread);
+        if (wSocket.getCount() &gt; 1) {
+            if (!this.netSrvList[portListen]) {
+                this.createNetServer(wSocket, portListen);
+            }
+        }
+        cluster = thread = wSocket = null;
+    },
+<span id='Nodext-app-master-Redis-method-createNetServer'>    /**
+</span>     * @method createNetServer
+     * Crea un netServer el cual atendera peticiones por el puerto configurado.
+     * @private
+     * @param wSocket
+     * @param portListen
+     */
+    createNetServer: function (wSocket, portListen) {
+        var netSrv = this.net.createServer({ pauseOnConnect: true }, this.netSrvCnx.bind(this, wSocket));
+        this.netSrvList[portListen] = netSrv;
+        var fnSrvListen = this.netSrvListen.bind(this, netSrv, portListen, wSocket);
+        netSrv.on(&quot;error&quot;, this.errorNetSrv.bind(this));
+        netSrv.listen(portListen, fnSrvListen);
+        netSrv = fnSrvListen = null;
+    },
+<span id='Nodext-app-master-Redis-method-errorNetSrv'>    /**
+</span>     * @method
+     * @private
+     * @param {Object} error
+     * Es ejecutado cuando hay un problema al iniciar un net Server
+     */
+    errorNetSrv: function (e) {
+        if (e.code === &#39;EADDRINUSE&#39;) {
+            Nodext.logError(&quot;Net Server Port Busy : &quot; + e.port);
+<span id='Nodext-app-master-Redis-event-errorportbusy'>            /**
+</span>             * @event errorportbusy
+             * Se dispara cuando el puerto configurado ya se encuentra en uso por otra aplicacion o proceso.
+             * @param this
+             * @param {Object} error
+             * @param {Number} portNetServer
+             */
+            this.fireEvent(&quot;errorportbusy&quot;, this, e, e.port);
+        }
+<span id='Nodext-app-master-Redis-event-error'>        /**
+</span>         * @event error
+         * Se dispara cuando el servidor presenta algun problema
+         * @param this
+         * @param {Object} error
+         */
+        this.fireEvent(&quot;error&quot;, this, e);
+    },
+<span id='Nodext-app-master-Redis-method-netSrvCnx'>    /**
+</span>     * @method netSrvCnx
+     * Balancea las conexiones entrantes en el puerto
+     * @private
+     * @param wSocket
+     * @param connection
+     */
+    netSrvCnx: function (wSocket, connection) {
+        var wCls;
+        wCls = wSocket.getAt(this.workerIndex(connection.remoteAddress, wSocket.length));
+        if (wCls) {
+            wCls.worker.send(&#39;sticky-session:connection&#39;, connection);
+        } else {
+            connection.write(&quot;GET / HTTP/1.0\r\n\r\n&quot;);
+            connection.end();
+        }
+    },
+<span id='Nodext-app-master-Redis-method-netSrvListen'>    /**
+</span>     * @method netSrvListen
+     * Dispara el evento netserverlisten el cual indica que el servidor esta activo
+     * @private
+     */
+    netSrvListen: function (netServer, portListen, wSocket) {
+        var message = &quot;NetServer Listen Port : &quot; + portListen + &quot;\n&quot;;
+        Nodext.logEvent(message);
+<span id='Nodext-app-master-Redis-event-netserverlisten'>        /**
+</span>         * @event netserverlisten
+         * @param {Nodext.app.master.Redis} redis
+         * @param {NodeInstance} netServer
+         * @param {Number} portListen
+         * @param {Ext.util.Collection} wSocket
+         */
+        this.fireEvent(&quot;netserverlisten&quot;, this, netServer, portListen, wSocket);
+    },
+<span id='Nodext-app-master-Redis-method-hash'>    /**
+</span>     * @method hash
+     * Metodo balanceador de conexiones entrantes.
+     * @private
+     */
+    hash: function (str) {
+        var hash = 5381,
+            i = str.length;
+        while (i)
+            hash = (hash * 33) ^ str.charCodeAt(--i)
+        return hash &gt;= 0 ? hash : (hash &amp; 0x7FFFFFFF) + 0x80000000;
+    },
+<span id='Nodext-app-master-Redis-method-workerIndex'>    /**
+</span>     * @method workerIndex
+     * Devuelve el index del Thread que atendera la conexion entrante.
+     * @private
+     */
+    workerIndex: function (ip, len) {
+        return this.hash(ip) % len;
+    },
+});</pre>
+</body>
+</html>

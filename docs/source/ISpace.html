@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-socket-IO-ISpace'>/**
+</span> * 
+ */
+Nodext.define(&quot;Nodext.socket.IO.ISpace&quot;, {
+    extend: &quot;Nodext.BaseInstance&quot;,
+<span id='Nodext-socket-IO-ISpace-property-DBErrorDestroy'>    // socketErrorMsg: null,
+</span>    DBErrorDestroy: true,
+<span id='Nodext-socket-IO-ISpace-property-space'>    // DBEndDestroy: true,
+</span>    space: this,
+<span id='Nodext-socket-IO-ISpace-method-constructor'>    // emit: function () {
+</span>    //     this.socket.emit.apply(this.socket, arguments);
+    // },
+    constructor: function (config) {
+        this.id = Nodext.id();
+        Nodext.apply(this, config);
+        if (this.autoInit) {
+            this.initBuild();
+        }
+    },
+<span id='Nodext-socket-IO-ISpace-method-sendError'>    // getIp: function (socket) {
+</span>    //     if (socket.request.connection.remoteAddress) {
+    //         return socket.request.connection.remoteAddress;
+    //     }
+    //     if (socket.handshake.address) {
+    //         return socket.handshake.headers.host;
+    //     }
+    //     if (socket.request.connection._peername.address) {
+    //         return socket.request.connection._peername.address;
+    //     }
+    //     return false;
+    // },
+    // getHostName: function (socket) {
+    //     if (socket.handshake.headers.host) {
+    //         return socket.handshake.headers.host.split(&quot;:&quot;).shift();
+    //     }
+    //     return false;
+    // },
+    // getIpFamily: function (socket) {
+    //     if (socket.request.connection._peername.family) {
+    //         return socket.request.connection._peername.family;
+    //     }
+    //     return false;
+    // },
+    // getPeerPort: function (socket) {
+    //     if (socket.request.connection._peername.port) {
+    //         return socket.request.connection._peername.port;
+    //     }
+    //     return false;
+    // },
+    // broadcast: function (socket, name, data) {
+    //     socket.broadcast.emit(name, data);
+    // },
+    sendError: function (err, code, log) {
+        if (log) {
+            Nodext.logError(err);
+        }
+        if (this.DBErrorDestroy) {
+            this.destroy();
+        }
+    },
+<span id='Nodext-socket-IO-ISpace-method-destroy'>    destroy: function () {
+</span>        this.space = null;
+        this.callParent();
+        delete this;
+    },
+<span id='Nodext-socket-IO-ISpace-method-exit'>    exit: function () {
+</span>        this.destroy();
+    },
+<span id='Nodext-socket-IO-ISpace-method-clear'>    clear: function () {
+</span>        this.destroy();
+    }
+    // onSendError: Nodext.emptyFn,
+    // destroy: function () {
+    //     this.socket = this.onSendError = this.socketErrorMsg = null;
+    //     this.callParent();
+    //     delete this;
+    // },
+    // getSpace: function () {
+    //     if (!this.destroyed) {
+    //         return this.socket.space;
+    //     }
+    // },
+    // sendError: function (err) {
+    //     if (this.socket &amp;&amp; !this.socket.destroyed) {
+    //         if (this.socketErrorMsg) {
+    //             err.message = this.socketErrorMsg;
+    //         }
+    //         this.socket.emit(&quot;systemerror&quot;, err);
+    //     }
+    //     this.onSendError(this, err);
+    //     this.destroy();
+    // }
+});</pre>
+</body>
+</html>

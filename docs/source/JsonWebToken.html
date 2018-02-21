@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-module-JsonWebToken'>/**
+</span> * 
+ */
+Nodext.define(&quot;Nodext.module.JsonWebToken&quot;, {
+    extend: &quot;Ext.Base&quot;,
+<span id='Nodext-module-JsonWebToken-property-S-configPrefixed'>    $configPrefixed: false,
+</span>    alternateClassName: [&quot;Nodext.JWT&quot;],
+    singleton: true,
+<span id='Nodext-module-JsonWebToken-property-jwt'>    /**
+</span>     * @property {NodeModule} jwt
+     */
+    jwt: null,
+<span id='Nodext-module-JsonWebToken-method-constructor'>    constructor: function (cfg) {
+</span>        Nodext.apply(this, cfg || {});
+        this.jwt = require(&#39;jsonwebtoken&#39;);
+        this.initConfig();
+    },
+<span id='Nodext-module-JsonWebToken-method-verify'>    verify: function (token, tokenString, fn) {
+</span>        this.jwt.verify(token, tokenString, fn);
+    },
+<span id='Nodext-module-JsonWebToken-method-sign'>    sign: function (data, token, fn) {
+</span>        return this.jwt.sign(data, token, fn);
+    }
+});</pre>
+</body>
+</html>

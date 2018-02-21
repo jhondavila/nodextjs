@@ -1,0 +1,4 @@
+usar las siguientes clases para ejemplos de documentacion...
+
+
+Ext.data.Store  el metodo sync cuenta con objects and properties

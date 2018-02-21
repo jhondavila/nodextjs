@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext'>/**
+</span> * @class Nodext
+ * @singleton
+ */
+(function () {
+<span id='Nodext-method-isReady'>    /**
+</span>     * Indica si Nodext esta listo para iniciar la aplicacion
+     */
+    Nodext.isReady = function () {
+        if (Nodext.isMaster()) {
+            return true;
+        } else if (Nodext.idWorker &amp;&amp; Nodext.idCluster) {
+            return true;
+        } else {
+            return false;
+        }
+    };
+<span id='Nodext-property-launchList'>    /**
+</span>     * @property {Array} launchList
+     * @private
+     * Lista de funciones a la espera de ejecutar cuando Nodext este listo.{@link Nodext#isReady} 
+     */
+    Nodext.launchList = [];
+<span id='Nodext-method-onReady'>    /**
+</span>     * @method onReady
+     * Agrega una Funcion a ejecutar cuando Nodext este listo.
+     * @param {Function} fn
+     */
+    Nodext.onReady = function (fn) {
+        if (Nodext.isReady()) {
+            fn();
+        } else {
+            Nodext.launchList.push(fn);
+        }
+    };
+<span id='Nodext-method-workerStartFn'>    /**
+</span>     * @method workerStartFn
+     * Agrega un listener al proceso Worker a la escucha del evento &quot;workerstart&quot; el cual indica que Nodext esta listo.
+     * Este solo se aplica para los Worker.En caso que el proceso sea Maestro Nodext se encuentra listo al finalizar 
+     * su carga de librerias.
+     * @private
+     * @param {Object} msg
+     */
+    Nodext.workerStartFn = function (msg) {
+        if (msg.to === &quot;Nodext&quot; &amp;&amp; msg.event === &quot;workerstart&quot;) {
+            var params = msg.params;
+            Nodext.executeLaunch(params[0], params[1], params[2]);
+            process.removeListener(&quot;message&quot;, Nodext.workerStartFn);
+        }
+    };
+    process.on(&quot;message&quot;, Nodext.workerStartFn);
+<span id='Nodext-method-executeLaunch'>    /**
+</span>     * @method executeLaunch
+     * Ejecuta las funciones de {@link Nodext#launch} y {@link Nodext#application} que se pusieron en cola
+     *  a la espera de que Nodext se encuentre listo.
+     * @private
+     * @param {String} idWorker
+     * @param {String} idCluster
+     */
+    Nodext.executeLaunch = function (idWorker, internalId, idCluster) {
+        Nodext.apply(Nodext, {
+            idWorker: idWorker,
+            internalId: internalId,
+            idCluster: idCluster
+        });
+
+        var list = Nodext.launchList;
+        for (var x = 0; x &lt; list.length; x++) {
+            if (Nodext.isFunction(list[x])) {
+                list[x]();
+            }
+        }
+    };
+    Nodext.appActive = Ext.create(&quot;Ext.util.Collection&quot;, {
+
+    });
+
+
+})();</pre>
+</body>
+</html>

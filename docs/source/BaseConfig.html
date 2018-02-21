@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-BaseConfig'>/**
+</span> * 
+ */
+Nodext.define(&quot;Nodext.BaseConfig&quot;, {
+    extend: &quot;Ext.Base&quot;,
+    requires: [
+        &quot;Nodext.app.Node&quot;
+    ],
+    config: {
+<span id='Nodext-BaseConfig-cfg-appNode'>        /**
+</span>         * @cfg {Nodext.app.Node} appNode
+         * @requires
+         */
+        appNode: null,
+<span id='Nodext-BaseConfig-cfg-fileCfg'>        /**
+</span>         * Nombre del archivo de las configuraciones
+         */
+        fileCfg: null
+    },
+<span id='Nodext-BaseConfig-property-S-configPrefixed'>    $configPrefixed: false,
+</span><span id='Nodext-BaseConfig-property-S-configStrict'>    $configStrict: false,
+</span><span id='Nodext-BaseConfig-method-constructor'>    constructor: function (config) {
+</span>        this.initConfig();
+        this.callParent();
+        config = config || {};
+        this.resolveAppNode(config);
+        config = this.formatCfg(config);
+        Nodext.apply(this, config);
+    },
+<span id='Nodext-BaseConfig-method-resolveAppNode'>    /**
+</span>     * @method
+     * @private
+     */
+    resolveAppNode: function (config) {
+        var appNode = config.appNode || this.appNode;
+        if (Nodext.isString(appNode)) {
+            appNode = Nodext.appActive.get(appNode);
+        } else if (appNode instanceof Nodext.app.Node) {
+            appNode = appNode;
+        } else if (!appNode) {
+            var totalApp = Nodext.appActive.count();
+            if (totalApp === 1) {
+                appNode = Nodext.appActive.getAt(0);
+            } else if (totalApp &gt; 1) {
+                Nodext.logError(&quot;Mayor de una aplicacion activa, debe pasar el parametro appNode a las clases que usen la propieda fileCfg&quot;)
+            } else {
+                Nodext.logError(&quot;No se encontro ninguna aplicación&quot;)
+            }
+        }
+        this.appNode = appNode;
+    },
+<span id='Nodext-BaseConfig-method-formatCfg'>    /**
+</span>    * @method formatCfg
+    * @private
+    * Obtiene las configuraciones y las formatea de acuerdo al tipo de proceso (Maestro o Worker).
+    */
+    formatCfg: function (config) {
+        var json;
+        if (config.fileCfg === false || this.fileCfg === false) {
+            json = {};
+        } else {
+            json = this.appNode.Global.getFileCfg(config.fileCfg || this.fileCfg);
+            if (Nodext.isObject(json.defaults)) {
+                Nodext.apply(json, json.defaults);
+            }
+        }
+        Nodext.apply(config, json);
+        return config;
+    }
+});</pre>
+</body>
+</html>

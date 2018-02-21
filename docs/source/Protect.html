@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-database-query-Protect'>/**
+</span> * 
+ */
+Nodext.define(&quot;Nodext.database.query.Protect&quot;, {
+    extend: &#39;Ext.Mixin&#39;,
+<span id='Nodext-database-query-Protect-property-S-configPrefixed'>    $configPrefixed: false,
+</span>    config: {
+<span id='Nodext-database-query-Protect-cfg-escapeChar'>        /**
+</span>         * @cfg
+         */
+        escapeChar: &#39;&quot;&#39;,
+<span id='Nodext-database-query-Protect-cfg-reservedIdentifiers'>        /**
+</span>         * @cfg
+         */
+        reservedIdentifiers: [&#39;*&#39;],
+<span id='Nodext-database-query-Protect-cfg-protectIdentifiers'>        /**
+</span>         * @cfg
+         */
+        protectIdentifiers: true,
+<span id='Nodext-database-query-Protect-cfg-dbprefix'>        /**
+</span>         * @cfg
+         */
+        dbprefix: &#39;&#39;,
+<span id='Nodext-database-query-Protect-cfg-likeEscapeChr'>        /**
+</span>         * @cfg
+         */
+        likeEscapeChr: &#39;!&#39;,
+<span id='Nodext-database-query-Protect-cfg-likeEscapeStr'>        /**
+</span>         * @cfg
+         */
+        likeEscapeStr: &quot; ESCAPE &#39;{0}&#39; &quot;
+    },
+<span id='Nodext-database-query-Protect-property-findOperators'>    /**
+</span>     *  @property {RegExp[]}
+     *  Lista de Operadores a interceptar por la clausula where: 
+     * 
+     *  
+     *  - `/\s*(?:&lt;|&gt;|!)?=\s*&#39;/i, // =, &lt;=, &gt;=, !=`
+     *  - `/\s*&lt;&gt;?\s*&#39;/i, // &lt;, &lt;&gt;`
+     *  - `/\s*&gt;\s*&#39;/i, // &gt;`
+     *  - `/\s+IS NULL&#39;/i, // IS NULL`
+     *  - `/\s+IS NOT NULL&#39;/i, // IS NOT NULL`
+     *  - `/\s+EXISTS\s*\([^\)]+\)/i, // EXISTS(sql)`
+     *  - `/\s+NOT EXISTS\s*\([^\)]+\)/i, // NOT EXISTS(sql)`
+     *  - `/\s+BETWEEN\s+\S+\s+AND\s+\S+/i, // BETWEEN value AND value`
+     *  - `/\s+IN\s*\([^\)]+\)/i, // IN(list)`
+     *  - `/\s+NOT IN\s*\([^\)]+\)/i, // NOT IN (list)`
+    */
+    findOperators: [
+        /\s*(?:&lt;|&gt;|!)?=\s*&#39;/i, // =, &lt;=, &gt;=, !=
+        /\s*&lt;&gt;?\s*&#39;/i, // &lt;, &lt;&gt;
+        /\s*&gt;\s*&#39;/i, // &gt;
+        /\s+IS NULL&#39;/i, // IS NULL
+        /\s+IS NOT NULL&#39;/i, // IS NOT NULL
+        /\s+EXISTS\s*\([^\)]+\)/i, // EXISTS(sql)
+        /\s+NOT EXISTS\s*\([^\)]+\)/i, // NOT EXISTS(sql)
+        /\s+BETWEEN\s+\S+\s+AND\s+\S+/i, // BETWEEN value AND value
+        /\s+IN\s*\([^\)]+\)/i, // IN(list)
+        /\s+NOT IN\s*\([^\)]+\)/i, // NOT IN (list)
+    ],
+<span id='Nodext-database-query-Protect-method-_escape_identifiers'>    /**
+</span>     * @method
+     * @private
+     * @deprecated
+     */
+    _escape_identifiers: function (item) {
+        var me = this, str;
+        if (this.escapeChar == &#39;&#39;) {
+            return item;
+        }
+        this.reservedIdentifiers.forEach(function (id) {
+            if (item.indexOf(&#39;.&#39;) !== -1) {
+                str = me.escapeChar + item.replace(&#39;.&#39;, me.escapeChar + &#39;.&#39;);
+                return me.preg_replace(&#39;/[&#39; + me.escapeChar + &#39;]+/&#39;, me.escapeChar, str);
+            }
+        });
+        if (item.indexOf(&#39;.&#39;) !== -1) {
+            str = me.escapeChar + item.replace(/\./g, me.escapeChar + &#39;.&#39; + me.escapeChar) + me.escapeChar;
+        } else {
+            str = me.escapeChar + item + me.escapeChar;
+        }
+        return me.preg_replace(&#39;/[&#39; + me.escapeChar + &#39;]+/&#39;, me.escapeChar, str);
+    },
+<span id='Nodext-database-query-Protect-method-protect_identifiers'>    /**
+</span>     * @method
+     * @private
+     */
+    protect_identifiers: function (QBI, item, prefix_single, protect_identifiers, field_exists) {
+        //        console.log(item);
+        prefix_single = (typeof prefix_single === &quot;undefined&quot;) ? false : prefix_single;
+        protect_identifiers = (typeof protect_identifiers === &quot;undefined&quot;) ? null : protect_identifiers;
+        field_exists = (typeof field_exists === &quot;undefined&quot;) ? true : field_exists;
+        var me = this,
+            QB = QBI,
+            x;
+
+        if (!Nodext.isBoolean(protect_identifiers)) {
+            protect_identifiers = me.protectIdentifiers;
+        }
+
+        if (Nodext.isArray(item)) {
+            console.trace(&quot;&#39;protect_identifiers&#39; parte del servidor no implementada&quot;);
+            //             $escaped_array = array();
+            //            foreach ($item as $k =&gt; $v) {
+            //                $escaped_array[$this-&gt;protect_identifiers($k)] = $this-&gt;protect_identifiers($v, $prefix_single, $protect_identifiers, $field_exists);
+            //            }
+        }
+        // This is basically a bug fix for queries that use MAX, MIN, etc.
+        // If a parenthesis is found we know that we do not need to
+        // escape the data or add a prefix. There&#39;s probably a more graceful
+        // way to deal with this, but I&#39;m not thinking of it -- Rick
+        //
+        // Added exception for single quotes as well, we don&#39;t want to alter
+        // literal strings. -- Narf
+        var offset = item.toUpperCase().indexOf(&quot; AS &quot;), idxParent = item.indexOf(&quot;(&quot;);
+        if (idxParent !== -1) {
+            if (/(MIN|MAX|SUM|AVG)\s*\([^\)]+\)/i.exec(item)) {
+                return item;
+            }
+        }
+        
+        //   Original method
+        //   if(item.indexOf(&quot;&#39;&quot;) !== -1){
+        //    return item;
+        //   }
+        //   Edited by method join in multiple conditions] example:
+        //   r_b.id_rol_base = r_comp_b.id_rol_base and r_b.swt_status = &#39;0&#39; and r_b.id_org = 1
+        //   detect  -&gt; &#39; &lt;- by 
+         
+        if (item.indexOf(&quot;&#39;&quot;) !== -1 &amp;&amp; !this.stringMatchAll(item, /\sAND\s|\sOR\s/ig)) {
+            return item;
+        }
+        // Convert tabs or multiple spaces into single spaces
+        item = item.replace(/\s+/, &#39; &#39;, item);
+        var alias, operator, subAlias;
+        if ((offset) &gt; -1) {
+            alias = (protect_identifiers) ? me.substr(item, offset, 4) + me.escape_identifiers(me.substr(item, offset + 4), true) : me.substr(item, offset);
+            item = me.substr(item, 0, offset);
+        } else if ((offset = item.indexOf(&#39; &#39;)) &gt; -1) {
+            subAlias = me.substr(item, offset);
+            operator = this._has_operator(subAlias);
+            if (operator) {
+                alias = subAlias;
+            } else {
+                alias = (protect_identifiers) ? &#39; &#39; + me.escape_identifiers(me.substr(item, offset + 1)) : me.substr(item, offset);
+            }
+            //            console.log(alias.green);
+            item = me.substr(item, 0, offset);
+        } else {
+            alias = &#39;&#39;;
+        }
+
+        // Break the string apart if it contains periods, then insert the table prefix
+        // in the correct location, assuming the period doesn&#39;t indicate that we&#39;re dealing
+        // with an alias. While we&#39;re at it, we will escape the components
+        if (item.indexOf(&#39;.&#39;) !== -1) {
+            //            console.log(item);
+            var parts = item.split(&quot;.&quot;);
+            // Does the first segment of the exploded item match
+            // one of the aliases previously identified? If so,
+            // we have nothing more to do other than escape the item
+            if (QB) {
+                if (Nodext.Array.contains(QB.qb_aliased_tables, parts[0])) {
+                    if (protect_identifiers === true) {
+                        for (x = 0; x &lt; parts.length; x++) {
+                            if (!Nodext.Array.contains(me.reservedIdentifiers, item[x])) {
+                                parts[x] = me.escape_identifiers(parts[x]);
+                            }
+                        }
+                        item = parts.join(&quot;.&quot;);
+                    }
+
+                    //                console.log(alias.red);
+                    //                console.log(item + alias);
+                    return item + alias;
+                }
+            }
+
+            // Is there a table prefix defined in the config file? If not, no need to do anything
+            if (me.dbprefix !== &#39;&#39;) {
+                console.trace(&quot;me.dbprefix&quot;);
+            }
+            if (protect_identifiers === true) {
+                item = me.escape_identifiers(item);
+            }
+            //            console.log(item + alias);
+            return item + alias;
+        }
+
+        if (me.dbprefix !== &#39;&#39;) {
+            console.trace(&quot;me.dbprefix&quot;);
+        }
+        if (protect_identifiers === true &amp;&amp; !Nodext.Array.contains(me.reservedIdentifiers, item)) {
+            item = me.escape_identifiers(item);
+        }
+        //        console.log(item + alias);
+        return item + alias;
+    },
+<span id='Nodext-database-query-Protect-method-escape_identifiers'>    /**
+</span>     * @method
+     * @private
+     */
+    escape_identifiers: function (item, isAlias) {
+        var me = this;
+        if (me.escapeChar === &#39;&#39; || me.empty(item) || Nodext.Array.contains(me.reservedIdentifiers, item)) {
+            return item;
+        } else if (Nodext.isArray(item)) {
+            for (var x = 0; x &lt; item.length; x++) {
+                item[x] = me.escape_identifiers(item[x]);
+            }
+            return item;
+        } else if ((me.ctype_digit(item) &amp;&amp; !isAlias) || item[0] === &quot;&#39;&quot; || (me.escapeChar !== &#39;&quot;&#39; &amp;&amp; item[0] === &#39;&quot;&#39;) || (item.indexOf(&quot;(&quot;) !== -1 &amp;&amp; !isAlias)) {
+            return item;
+        }
+        var preg_ec = [];
+        if (me.empty(preg_ec)) {
+            if (Nodext.isArray(me.escapeChar)) {
+                preg_ec = [
+                    me.preg_quote(me.escapeChar[0], &#39;/&#39;),
+                    me.preg_quote(me.escapeChar[1], &#39;/&#39;),
+                    me.escapeChar[0],
+                    me.escapeChar[1],
+                ];
+            } else {
+                preg_ec[0] = preg_ec[1] = me.preg_quote(me.escapeChar, &quot;/&quot;);
+                preg_ec[2] = preg_ec[3] = me.escapeChar;
+            }
+        }
+        me.reservedIdentifiers.forEach(function (id) {
+            if (item.indexOf(&#39;.&#39; + id) !== -1) {
+                return me.preg_replace(&#39;/&#39; + preg_ec[0] + &#39;?([^&#39; + preg_ec[1] + &#39;\\.]+)&#39; + preg_ec[1] + &#39;?\\./i&#39;, preg_ec[2] + &#39;$1&#39; + preg_ec[3] + &#39;.&#39;, item);
+            }
+        });
+
+        return me.preg_replace(&#39;/&#39; + preg_ec[0] + &#39;?([^&#39; + preg_ec[1] + &#39;\\.]+)&#39; + preg_ec[1] + &#39;?(\\.)?/ig&#39;, preg_ec[2] + &#39;$1&#39; + preg_ec[3] + &#39;$2&#39;, item);
+    },
+<span id='Nodext-database-query-Protect-method-_has_operator'>    /**
+</span>     * @method
+     * @private
+     */
+    _has_operator: function (str) {
+        if (typeof str === &quot;string&quot;) {
+            return !!/(&lt;|&gt;|!|=|\sIS NULL|\sIS NOT NULL|\sEXISTS|\sBETWEEN|\sLIKE|\sIN\s*\(|\s)/i.exec(str.trim());
+        } else {
+            return false;
+        }
+    },
+<span id='Nodext-database-query-Protect-method-escape'>    /**
+</span>     * @method
+     * @private
+     */
+    escape: function (str) {
+        if (typeof str === &#39;string&#39;) {
+            return &quot;&#39;&quot; + this.escape_str(str) + &quot;&#39;&quot;;
+        } else if (Nodext.isNumber(str)) {
+            return &quot;&#39;&quot; + str + &quot;&#39;&quot;;
+        } else if (typeof str === &#39;boolean&#39;) {
+            return (str === false) ? &quot;&#39;0&#39;&quot; : &quot;&#39;1&#39;&quot;;
+        } else if (str === null || typeof str === &quot;undefined&quot;) {
+            return &#39;NULL&#39;
+        } else if (Nodext.isArray(str) || Nodext.isObject(str)) {
+            try {
+                return JSON.stringify(str);
+            } catch (error) {
+                console.log(error);
+                console.trace(&quot;funcionalidad aun no construida escape&quot;);
+            }
+        }
+    },
+<span id='Nodext-database-query-Protect-method-escape_like_str'>    /**
+</span>     * @method
+     * @private
+     */
+    escape_like_str: function (str) {
+        return this.escape_str(str, true);
+    },
+<span id='Nodext-database-query-Protect-method-escape_str'>    /**
+</span>     * @method
+     * @private
+     */
+    escape_str: function (str, like) {
+        if (Nodext.isArray(str) || Nodext.isObject(str)) {
+            //            console.log(&quot;==&gt;&quot; + str);
+            console.trace(&quot;funcionalidad aun no construida escape_str&quot;);
+        }
+        //        if(Nodext.isNumber(str)){}
+        str = this._escape_str(str);
+        if (like) {
+            return this.str_replace([this.likeEscapeChr, &#39;%&#39;, &#39;_&#39;], [this.likeEscapeChr + this.likeEscapeChr, this.likeEscapeChr + &#39;%&#39;, this.likeEscapeChr + &#39;_&#39;], str);
+        }
+        return str;
+    },
+<span id='Nodext-database-query-Protect-method-_escape_str'>    /**
+</span>     * @method
+     * @private
+     */
+    _escape_str: function (str) {
+        return this.remove_invisible_characters(str).replace(&quot;&#39;&quot;, &quot;&#39;&#39;&quot;);
+    },
+<span id='Nodext-database-query-Protect-method-remove_invisible_characters'>    /**
+</span>     * @method
+     * @private
+     */
+    remove_invisible_characters: function (str, url_encoded) {
+        url_encoded = (typeof url_encoded === &quot;undefined&quot;) ? true : url_encoded;
+        var non_displayables = [];
+        var me = this;
+        if (url_encoded === true) {
+            str = str.replace(/%0[0-8bcef]/, &#39;&#39;);
+            str = str.replace(/%1[0-9a-f]/, &#39;&#39;);
+        }
+        str = str.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]+/, &#39;&#39;);
+        return str;
+    },
+<span id='Nodext-database-query-Protect-method-_get_operator'>    /**
+</span>     * @method
+     * @private
+     */
+    _get_operator: function (str) {
+        var _les = (this.likeEscapeStr !== &#39;&#39;) ?
+            &#39;\s+&#39; + this.preg_quote(Nodext.String.format(this.likeEscapeStr, this.likeEscapeChr).trim())
+            : &#39;&#39;;
+        var status = false;
+        var array = [eval(&#39;/\s+LIKE\s+\S+&#39; + _les + &#39;/i&#39;), eval(&#39;/\s+NOT LIKE\s+\S+&#39; + _les + &#39;/i&#39;)].concat(this.findOperators);
+        var text = false;
+        Nodext.Array.forEach(array, function (item, index) {
+            status = item.exec(str);
+            if (!!status) {
+                text = status[0];
+                return false;
+            }
+        });
+        return text;
+    }
+});
+</pre>
+</body>
+</html>

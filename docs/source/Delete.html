@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-database-action-Delete'>/**
+</span> * 
+ */
+Nodext.define(&quot;Nodext.database.action.Delete&quot;, {
+    extend: &quot;Nodext.database.action.Base&quot;,
+    alias: &#39;dbaction.delete&#39;,
+<span id='Nodext-database-action-Delete-cfg-action'>    action: &quot;delete&quot;,
+</span>    config: {
+<span id='Nodext-database-action-Delete-cfg-position'>        position: -1
+</span>    },
+<span id='Nodext-database-action-Delete-method-init'>    init: function () {
+</span>        this.result = [];
+    },
+<span id='Nodext-database-action-Delete-method-continue'>    continue: function () {
+</span>        if (this.query[this.position + 1]) {
+            return true;
+        } else {
+            return false;
+        }
+    },
+<span id='Nodext-database-action-Delete-method-next'>    next: function () {
+</span>        this.position++;
+    },
+<span id='Nodext-database-action-Delete-method-getNext'>    getNext: function (rsg) {
+</span>        this.position++;
+        return this.query[this.position];
+    },
+<span id='Nodext-database-action-Delete-method-setResultBatch'>    setResultBatch: function (result) {
+</span>        this.result.push(result);
+    },
+<span id='Nodext-database-action-Delete-method-destroy'>    destroy: function () {
+</span>        for (var x = 0; x &lt; this.result.length; x++) {
+            Nodext.destroyArray(this.result[x].rows, this.result[x].fields);
+            Nodext.destroyObject(this.result[x]);
+        }
+        this.result = null;
+        Nodext.destroyArray(this.query, this.records);
+        Nodext.destroyObject(this.replaceFields);
+        this.qb = this.inst = null;
+        this.callParent();
+        Nodext.destroyClass(this);
+        delete this;
+    }
+});</pre>
+</body>
+</html>

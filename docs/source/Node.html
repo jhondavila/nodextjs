@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-app-Node'>/**
+</span> * 
+ */
+Nodext.define(&quot;Nodext.app.Node&quot;, {
+    extend: &quot;Ext.Base&quot;,
+    mixins: {
+        observable: &#39;Ext.util.Observable&#39;
+    },
+    requires: [
+        &quot;Nodext.console.Color&quot;
+    ],
+<span id='Nodext-app-Node-property-S-configPrefixed'>    $configPrefixed: false,
+</span><span id='Nodext-app-Node-property-S-configStrict'>    $configStrict: false,
+</span><span id='Nodext-app-Node-property-Global'>    /**
+</span>    * @property {Nodext.app.GlobalConfig|Object} Global
+    * Crear una instancia de Nodext.app.GlobalConfig el cual contiene las configuraciones y paths.
+    */
+    Global: null,
+    config: {
+<span id='Nodext-app-Node-cfg-appName'>        /**
+</span>         * @cfg {String} appName
+         * Nombre de la aplicacion
+         */
+        appName: null,
+<span id='Nodext-app-Node-cfg-path'>        /**
+</span>         * @cfg {String} path
+         * Ruta de la aplicacion
+         */
+        path: null,
+<span id='Nodext-app-Node-cfg-version'>        /**
+</span>         * @cfg {String} version
+         * Version de la aplicacion
+         */
+        version: null,
+<span id='Nodext-app-Node-cfg-fileCfg'>        /**
+</span>         * @cfg {Object} fileCfg
+         * Configuraciones app.json
+         */
+        fileCfg: null,
+<span id='Nodext-app-Node-cfg-enabledCluster'>        /**
+</span>        * @cfg {Boolean} [enabledCluster=false]
+        * Habilita el modo Cluster para crecimiento vertical
+        */
+        enabledCluster: false,
+<span id='Nodext-app-Node-cfg-idWorker'>        /**
+</span>         * @cfg {String} idWorker
+         */
+        idWorker: null,
+<span id='Nodext-app-Node-cfg-idCluster'>        /**
+</span>         * @cfg {String} idCluster
+         */
+        idCluster: null,
+<span id='Nodext-app-Node-cfg-pathBase'>        /**
+</span>         * @cfg {String} pathBase
+         * ruta base de la aplicacion
+         */
+        pathBase: null
+    },
+
+<span id='Nodext-app-Node-method-setPath'>    setPath: function (path) {
+</span>        path = this.pathBase + &quot;/&quot; + path;
+        this.path = path;
+        Nodext.Loader.setPath(this.appName, path);
+    },
+<span id='Nodext-app-Node-method-constructor'>    constructor: function (cfg) {
+</span>        cfg = cfg || {};
+        Nodext.apply(this, cfg);
+        this.initConfig(cfg);
+        this.mixins.observable.constructor.call(this, cfg);
+        this.setConfig(this.fileCfg);
+        var Global = this.Global || {};
+        Global.appNode = this;
+        this.Global = Nodext.create(&quot;Nodext.app.GlobalConfig&quot;, Global);
+        Nodext.ConsoleColor.loadCfgFromAppNode(this);
+        Global = null;
+        Nodext.appActive.add(this);
+        Nodext.db.Manager.loadCnx(this);
+        this.initialize();
+    },
+<span id='Nodext-app-Node-method-initialize'>    initialize: function () {
+</span>        if (Nodext.argv.test) {
+            this.launchTest();
+        } else if (this.enabledCluster) {
+            if (this.isMaster()) {
+                this.launch();
+            } else {
+                this.launchWorker();
+            }
+        } else {
+            this.launch();
+        }
+    },
+<span id='Nodext-app-Node-method-destroy'>    destroy: function () {
+</span>        Nodext.appActive.remove(this);
+    },
+<span id='Nodext-app-Node-method-isMaster'>    /**
+</span>     * @method
+     * Determina si el proceso actual esta configurado como maestro o Thread
+     */
+    isMaster: function () {
+        if (this.enabledCluster) {
+            return Nodext.isMaster();
+        } else {
+            return true;
+        }
+    },
+<span id='Nodext-app-Node-method-launch'>    /**
+</span>     * @method
+     * @template
+     * Llamada automaticamente cuando la aplicacion es el proceso principal
+     */
+    launch: Nodext.emptyFn,
+<span id='Nodext-app-Node-method-launchWorker'>    /**
+</span>    * @method
+    * @template
+    * Llamada automaticamente cuando la aplicacion es el proceso worker, para eso se requiere que
+    *  {@link Nodext.app.Node#enabledCluster} = &#39;true&#39;
+    */
+    launchWorker: Nodext.emptyFn,
+<span id='Nodext-app-Node-method-fireEventMaster'>    /**
+</span>     * @method fireEventMaster
+     * @private 
+     */
+    fireEventMaster: function (event, params) {
+        if (process.send) {
+            process.send({ ename: event, params: params });
+        }
+    },
+<span id='Nodext-app-Node-method-httpListen'>    httpListen: function (server) {
+</span>        this.fireEventMaster(&quot;workerhttpinit&quot;, [Nodext.idCluster, Nodext.idWorker, server.getId()]);
+    },
+<span id='Nodext-app-Node-method-socketListen'>    socketListen: function (socket) {
+</span>        this.fireEventMaster(&quot;wokrersocketioinit&quot;, [Nodext.idCluster, Nodext.idWorker, socket.getId()]);
+    }
+});</pre>
+</body>
+</html>

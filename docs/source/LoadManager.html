@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-test-LoadManager'>/**
+</span> * 
+ */
+Nodext.define(&quot;Nodext.test.LoadManager&quot;, {
+    extend: &quot;Nodext.app.FileLoader&quot;,
+<span id='Nodext-test-LoadManager-cfg-loaderPath'>    loaderPath: &quot;tests&quot;,
+</span><span id='Nodext-test-LoadManager-cfg-autoLoad'>    autoLoad: false,
+</span><span id='Nodext-test-LoadManager-method-constructor'>    constructor: function () {
+</span>        this.callParent(arguments);
+        this.start();
+        this.libLoad = require(&quot;loadtest&quot;);
+    },
+<span id='Nodext-test-LoadManager-method-getIdItem'>    getIdItem: function (item) {
+</span>        return item._keyItem;
+    },
+<span id='Nodext-test-LoadManager-property-indexTest'>    indexTest: -1,
+</span><span id='Nodext-test-LoadManager-property-currentTest'>    currentTest: null,
+</span><span id='Nodext-test-LoadManager-method-initTest'>    initTest: function (fn) {
+</span>        this.indexTest = -1;
+        this.currentTest = null;
+        this.callBack = fn;
+        this.onTestFnBind = this.onTestFn.bind(this);
+        this.testLoop();
+    },
+<span id='Nodext-test-LoadManager-method-testLoop'>    testLoop: function () {
+</span>        this.indexTest++;
+        this.currentTest = this.items.getAt(this.indexTest);
+        if (this.currentTest &amp;&amp; this.currentTest.disabled) {
+            this.testLoop();
+            return;
+        }
+        if (this.currentTest) {
+            var test = this.currentTest.next();
+            if (test) {
+                this.libLoad.loadTest(test, this.onTestFnBind);
+            } else {
+                this.testLoop();
+            }
+        } else {
+            this.callBack();
+        }
+    },
+<span id='Nodext-test-LoadManager-method-onTestFn'>    onTestFn: function (error, result) {      
+</span>        console.log(result);
+        var test = this.currentTest.next();
+        if (test) {
+            this.libLoad.loadTest(test, this.onTestFnBind);
+        } else {
+            this.testLoop();
+        }
+    }
+
+});</pre>
+</body>
+</html>

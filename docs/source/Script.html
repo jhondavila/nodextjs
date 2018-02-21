@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-http-controller-Script'>/**
+</span> * 
+ */
+Nodext.define(&quot;Nodext.http.controller.Script&quot;, {
+    extend: &quot;Ext.Base&quot;,
+    singleton: true,
+<span id='Nodext-http-controller-Script-method-constructor'>    constructor: function () {
+</span>        this.initConfig();
+        this.callParent();
+    },
+<span id='Nodext-http-controller-Script-property-whType'>    whType: {
+</span>        ///
+        where: 0,
+        or_where: 0,
+        where_in: 1,
+        or_where_in: 1,
+        where_not_in: 1,
+        or_where_not_in: 1,
+        ///
+        like: 2,
+        not_like: 2,
+        or_like: 2,
+        or_not_like: 2,
+        ///
+        or_group_start: 3,
+        not_group_start: 3,
+        or_not_group_start: 3,
+        group_start: 3
+    },
+<span id='Nodext-http-controller-Script-method-buildTreeApp'>    buildTreeApp: function (applications, parentId, nodeKey, parentKey) {
+</span>        var app_tree = [];
+        var ctrl = this;
+        Ext.Array.each(applications, function (app) {
+            if (app[parentKey] === parentId) {
+                var children = ctrl.buildTreeApp(applications, app[nodeKey], nodeKey, parentKey);
+                if (children.length &gt; 0) {
+                    app[&quot;children&quot;] = children;
+                }
+                if (children.length === 0) {
+                    if (app[&quot;leaf&quot;] === 0) {
+                        app[&quot;children&quot;] = [];
+                        app[&quot;leaf&quot;] = false;
+                    } else {
+                        app[&quot;leaf&quot;] = true;
+                    }
+                }
+                Ext.Array.push(app_tree, app);
+            }
+        });
+        return app_tree;
+    },
+<span id='Nodext-http-controller-Script-method-findFilter'>    findFilter: function (inst, filterName) {
+</span>        var findFilter, filters, extraFilters;
+        if (!inst.cacheFilter &amp;&amp; !inst.cacheExtraFilter) {
+            findFilter = filters = extraFilters = null;
+            return false;
+        } else {
+            var findFilter = false;
+            Nodext.Array.each(inst.cacheFilter, function (filter) {
+                if (filter.property == filterName) {
+                    findFilter = filter;
+                    return false;
+                }
+            });
+            if (!findFilter) {
+                Nodext.Array.each(inst.cacheExtraFilter, function (filter) {
+                    if (filter.property == filterName) {
+                        findFilter = filter;
+                        return false;
+                    }
+                });
+            }
+            filters = extraFilters = null;
+            return findFilter;
+        }
+    },
+<span id='Nodext-http-controller-Script-method-queryUtil'>    queryUtil: function (inst, options) {
+</span>        var params = inst.getParams();
+        var obj = {
+        };
+        var me = this;
+        //        obj.id = params.id;
+        if (params.filter) {
+            obj.where = me.queryWhereFilters(inst, params.filter, options ? options.filters : {}, false);
+        } else {
+            obj.where = [];
+        }
+
+        if (params.extraFilter) {
+            obj.where = obj.where || [];
+            obj.where = Nodext.Array.merge(obj.where, me.queryWhereFilters(inst, params.extraFilter, options ? options.filters : {}, true));
+        }
+
+        if (params.id) {
+
+
+            this.loopWh(inst, [{
+                property: &quot;id&quot;,
+                value: params.id
+            }], options ? options.filters : {}, obj.where);
+        }
+
+        if (params.data) {
+            try {
+                obj.data = JSON.parse(params.data);
+            } catch (e) {
+                obj.data = [];
+            }
+            if (!Array.isArray(obj.data)) {
+                obj.data = [obj.data];
+            }
+        }
+        if (params.columns) {
+            try {
+                obj.columns = JSON.parse(params.columns);
+            } catch (e) {
+                obj.columns = [];
+            }
+            if (!Array.isArray(obj.columns)) {
+                obj.columns = [obj.columns];
+            }
+        }
+        if (params.sort) {
+            obj.sort = me.querySort(inst, params.sort, options ? options.sort : undefined, false);
+        } else {
+            obj.sort = [];
+        }
+        obj.modelId = params.modelId;
+        obj.clientId = params.clientId;
+        obj.modelParentId = params.modelParentId;
+
+        obj.start = params.start;
+        obj.limit = params.limit;
+        if (params.hasOwnProperty(&quot;node&quot;)) {
+            obj.node = params.node;
+        }
+        return obj;
+    },
+<span id='Nodext-http-controller-Script-method-querySort'>    querySort: function (inst, sorts, options) {
+</span>        if (!(Nodext.isObject(sorts) || Array.isArray(sorts))) {
+            try {
+                sorts = JSON.parse(sorts);
+                inst.cacheSort = sorts;
+            } catch (e) {
+                inst.sendError({
+                    message: &quot;Error al decodificar la entrada de datos&quot;
+                });
+            }
+        }
+        if (!Array.isArray(sorts)) {
+            sorts = [sorts];
+        }
+        var sortItems = [], x;
+        for (x = 0; x &lt; sorts.length; x++) {
+            if (sorts[x].property) {
+                sortItems.push([sorts[x].property, sorts[x].direction]);
+            }
+        }
+        x = null;
+        return sortItems;
+    },
+<span id='Nodext-http-controller-Script-method-queryWhereFilters'>    queryWhereFilters: function (inst, filters, options, extraFilter) {
+</span>        if (typeof filters === &quot;string&quot;) {
+            try {
+                filters = JSON.parse(filters);
+                if (extraFilter === false) {
+                    inst.cacheFilter = filters;
+                } else if (extraFilter === true) {
+                    inst.cacheExtraFilter = filters;
+                }
+            } catch (e) {
+                inst.sendError({
+                    message: &quot;Error al decodificar la entrada de datos&quot;
+                });
+                return false;
+            }
+        }
+        if (!Array.isArray(filters)) {
+            filters = [filters];
+        }
+        var where = [];
+        this.loopWh(inst, filters, options, where);
+        return where;
+    },
+<span id='Nodext-http-controller-Script-method-loopWh'>    loopWh: function (inst, filters, options, where) {
+</span>        var replaceFields = options.replaceFields || {},
+            extraReplace = options.extraReplace || {},
+            ignoreFilter, field, value, type, operator, fn, filter, nf, x;
+        for (x = 0; x &lt; filters.length; x++) {
+            filter = filters[x];
+            if (Nodext.isObject(filter)) {
+                ignoreFilter = false;
+                if (options.validate || options.extraValidate) {
+                    fn = options.validate[filter.property] || options.extraValidate[filter.property];
+                    if (Nodext.isFunction(fn)) {
+                        if (fn(filter, filters) === false) {
+                            ignoreFilter = true;
+                        }
+                    }
+                }
+                field = filter.property;
+                value = filter.hasOwnProperty(&quot;value&quot;) ? filter.value : null;
+                if (typeof filter.exactMatch === &quot;boolean&quot; &amp;&amp; filter.exactMatch === true) {
+                    filter.exactMatch = &quot;=&quot;;
+                }
+                operator = filter.operator || filter.exactMatch || null;
+                type = filter.type || &#39;where&#39;;
+
+
+                if (replaceFields || extraReplace) {
+                    if (replaceFields[field] || extraReplace[field]) {
+                        field = replaceFields[field] || extraReplace[field];
+                    }
+                }
+                if (!ignoreFilter) {
+                    if (this.whType[type] === 0) {
+                        //                        if (operator === &quot;=&quot;) {
+                        //                            where.push({
+                        //                                type: type,
+                        //                                field: field + &quot; =&quot;,
+                        //                                value: value
+                        //                            });
+                        //                        } else if (operator === &quot; &lt;&gt;&quot;) {
+                        //                            where.push({
+                        //                                type: type,
+                        //                                field: field + &quot; &lt;&gt;&quot;,
+                        //                                value: value
+                        //                            });
+                        //                        } else {
+                        where.push({
+                            type: type,
+                            field: field + (operator ? &quot; &quot; + operator : &quot;&quot;),
+                            value: value
+                        });
+                        //                        }
+                    } else if (this.whType[type] === 1) {
+                        if (Array.isArray(value)) {
+                            value = value.slice(0, value.length);
+                        } else {
+                            value = [value];
+                        }
+                        where.push({
+                            type: type,
+                            field: field,
+                            value: value
+                        });
+                    } else if (this.whType[type] === 2) {
+                        nf = {
+                            type: type,
+                            field: field,
+                            value: value,
+                            cast: filter.cast
+                        };
+                        if (filter.hasOwnProperty(&quot;ignoreCase&quot;)) {
+                            nf.ilike = filter.ignoreCase;
+                        }
+                        where.push(nf);
+                    } else if (this.whType[type] === 3) {
+                        where.push({
+                            type: type,
+                            where: this.queryWhereFilters(inst, filter.where || [], options)
+                        });
+                    } else {
+                        where.push({
+                            field: field,
+                            value: value
+                        });
+                    }
+                }
+            }
+        }
+        ignoreFilter = field = value = type = operator = fn = filter = x = nf = null;
+    }
+});</pre>
+</body>
+</html>

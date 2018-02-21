@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-database-action-Base'>/**
+</span> * 
+ */
+Nodext.define(&quot;Nodext.database.action.Base&quot;, {
+    extend: &quot;Ext.Base&quot;,
+<span id='Nodext-database-action-Base-property-S-configPrefixed'>    $configPrefixed: false,
+</span><span id='Nodext-database-action-Base-property-S-configStrict'>    $configStrict: false,
+</span>    alias: &#39;dbaction.base&#39;,
+    mixins: [
+        &#39;Ext.mixin.Factoryable&#39;,
+        &#39;Ext.util.Observable&#39;
+    ],
+<span id='Nodext-database-action-Base-property-factoryConfig'>    factoryConfig: {
+</span>        defaultType: &#39;base&#39;,
+        defaultProperty: &quot;action&quot;
+    },
+    config: {
+<span id='Nodext-database-action-Base-cfg-id'>        id: null,
+</span><span id='Nodext-database-action-Base-cfg-query'>        query: null,
+</span><span id='Nodext-database-action-Base-cfg-idGroup'>        idGroup: null,
+</span><span id='Nodext-database-action-Base-cfg-result'>        result: null,
+</span><span id='Nodext-database-action-Base-cfg-inst'>        inst: null,
+</span><span id='Nodext-database-action-Base-cfg-params'>        params: null,
+</span><span id='Nodext-database-action-Base-cfg-qb'>        qb: null,
+</span><span id='Nodext-database-action-Base-cfg-type'>        type: null,
+</span><span id='Nodext-database-action-Base-cfg-onErrorResMsg'>        onErrorResMsg: true,
+</span><span id='Nodext-database-action-Base-cfg-onErrorContinue'>        onErrorContinue: false,
+</span><span id='Nodext-database-action-Base-cfg-onTransFailContinue'>        onTransFailContinue: false,
+</span><span id='Nodext-database-action-Base-cfg-action'>        action: &#39;base&#39;
+</span>    },
+<span id='Nodext-database-action-Base-method-constructor'>    constructor: function (cfg) {
+</span>        cfg = cfg || {};
+        Nodext.apply(this, cfg);
+        this.initConfig(cfg);
+        this.mixins.observable.constructor.call(this, cfg);
+        this.init();
+        if (this.debug) {
+            console.log(&#39;------------------------&#39;);
+            if (Array.isArray(this.query)) {
+                for (var x = 0; x &lt; this.query.length; x++) {
+                    console.log(this.query[x]);
+                }
+            } else {
+                console.log(this.query);
+            }
+            console.log(&#39;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&#39;);
+        }
+    },
+<span id='Nodext-database-action-Base-method-init'>    init: Nodext.emptyFn,
+</span><span id='Nodext-database-action-Base-method-getParams'>    getParams: function (item) {
+</span>        if (this.params &amp;&amp; this.params.hasOwnProperty(item)) {
+            return this.params[item];
+        } else {
+            return null;
+        }
+    },
+<span id='Nodext-database-action-Base-method-destroy'>    destroy: function () {
+</span>        this.clearListeners();
+        this.qb = this.inst = this.listeners = null;
+        Nodext.destroyObject(this.params);
+        this.callParent();
+    }
+});</pre>
+</body>
+</html>

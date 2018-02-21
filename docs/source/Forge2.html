@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-database-query-Forge'>/**
+</span> * 
+ */
+Nodext.define(&quot;Nodext.database.query.Forge&quot;, {
+    extend: &#39;Nodext.database.query.Base&#39;,
+<span id='Nodext-database-query-Forge-property-S-_createDataBase'>    $_createDataBase: &#39;CREATE DATABASE {0}&#39;,
+</span><span id='Nodext-database-query-Forge-property-S-_dropDataBase'>    $_dropDataBase: &#39;DROP DATABASE {0}&#39;,
+</span><span id='Nodext-database-query-Forge-property-S-_createTable'>    $_createTable: &#39;CREATE TABLE {0} ({1})&#39;,
+</span><span id='Nodext-database-query-Forge-property-S-_createTableIfNotExists'>    $_createTableIfNotExists: &#39;CREATE TABLE IF NOT EXISTS  {0} ({1})&#39;,
+</span><span id='Nodext-database-query-Forge-property-S-_dropTableIfExists'>    $_dropTableIfExists: &#39;DROP TABLE IF EXISTS {0}&#39;,
+</span><span id='Nodext-database-query-Forge-property-S-_createSchema'>    $_createSchema: &#39;CREATE SCHEMA {0}&#39;,
+</span><span id='Nodext-database-query-Forge-property-S-_createSchemaIfNotExists'>    $_createSchemaIfNotExists: &#39;CREATE SCHEMA IF NOT EXISTS {0}&#39;,
+</span><span id='Nodext-database-query-Forge-property-S-_dropSchemaIfExists'>    $_dropSchemaIfExists: &#39;DROP SCHEMA IF EXISTS {0}&#39;,
+</span><span id='Nodext-database-query-Forge-property-S-_renameTable'>    $_renameTable: &#39;&#39;,
+</span><span id='Nodext-database-query-Forge-property-S-_default'>    $_default: &#39;&#39;,
+</span><span id='Nodext-database-query-Forge-property-S-_UseSequence'>    $_UseSequence: &quot;nextval(&#39;{0}&#39;::regclass)&quot;,
+</span><span id='Nodext-database-query-Forge-property-S-_CreateSequence'>    $_CreateSequence: &quot;CREATE SEQUENCE {0};&quot;,
+</span><span id='Nodext-database-query-Forge-property-S-_DropSequence'>    $_DropSequence: &quot;DROP SEQUENCE {0};&quot;,
+</span><span id='Nodext-database-query-Forge-property-S-_DropSequenceIfExists'>    $_DropSequenceIfExists: &quot;DROP SEQUENCE IF EXISTS {0};&quot;,
+</span><span id='Nodext-database-query-Forge-property-S-_CreateSequenceIfNotExists'>    $_CreateSequenceIfNotExists: &quot;CREATE SEQUENCE IF NOT EXISTS {0};&quot;,
+</span><span id='Nodext-database-query-Forge-property-_castTypeField'>    _castTypeField: {
+</span>        &#39;INT2&#39;: {
+            postgre: {
+                type: &quot;smallint&quot;,
+                useSequence: true,
+                typeCastAutoIncrement: &#39;smallserial&#39;,
+                fnParser: {
+                    default: &quot;tbl_builder.defaultToSmallint&quot;
+                }
+            },
+            mysql: {
+                type: &quot;SMALLINT&quot;
+            }
+        },
+        &#39;INT4&#39;: {
+            postgre: {
+                type: &quot;integer&quot;,
+                useSequence: true,
+                typeCastAutoIncrement: &#39;serial&#39;,
+                fnParser: {
+                    default: &quot;tbl_builder.defaultToInteger&quot;
+                }
+            },
+            mysql: {
+                type: &quot;INT&quot;
+            }
+        },
+        &#39;INT8&#39;: {
+            postgre: {
+                type: &quot;bigint&quot;,
+                useSequence: true,
+                typeCastAutoIncrement: &#39;bigserial&#39;,
+                fnParser: {
+                    default: &quot;tbl_builder.defaultToBigint&quot;
+                }
+            },
+            mysql: {
+                type: &quot;BIGINT&quot;
+            }
+        },
+        //PRECISION INEXACTA
+        &#39;FLOAT4&#39;: {
+            postgre: &quot;real&quot;,
+            mysql: &quot;FLOAT&quot;
+        },
+        //PRECISION INEXACTA
+        &#39;FLOAT8&#39;: {
+            postgre: &quot;double precision&quot;,
+            mysql: &quot;DOUBLE&quot;
+        },
+        //PRECISION EXACTA
+        &#39;NUMERIC&#39;: {
+            postgre: &quot;numeric&quot;,
+            mysql: &quot;DECIMAL&quot;
+        },
+        //PRECISION EXACTA
+        &#39;DECIMAL&#39;: {
+            postgre: &quot;numeric&quot;,
+            mysql: &quot;DECIMAL&quot;
+        },
+        &#39;TEXT&#39;: {
+            postgre: &quot;text&quot;,
+            mysql: &quot;TEXT&quot;
+        },
+        &#39;CHAR&#39;: {
+            postgre: &quot;char&quot;,
+            mysql: &quot;char&quot;
+        },
+        &#39;VARCHAR&#39;: {
+            postgre: &quot;varchar&quot;,
+            mysql: &quot;VARCHAR&quot;
+        },
+        &#39;JSON&#39;: {
+            postgre: &quot;json&quot;,
+            mysql: &quot;TEXT&quot;
+        },
+        &#39;ARRAY&#39;: {
+            postgre: &quot;array&quot;,
+            mysql: &quot;TEXT&quot;
+        },
+        &#39;XML&#39;: {
+            postgre: &quot;xml&quot;,
+            mysql: &quot;TEXT&quot;
+        },
+        &#39;DATE&#39;: {
+            postgre: &quot;date&quot;,
+            mysql: &quot;date&quot;
+        },
+        &#39;TIME&#39;: {
+            postgre: &quot;time&quot;,
+            mysql: &quot;time&quot;
+        },
+        &#39;TIMESTAMP&#39;: {
+            postgre: &quot;timestamp with time zone&quot;,
+            mysql: &quot;DATETIME&quot;
+        }
+    },
+<span id='Nodext-database-query-Forge-method-createDataBase'>    createDataBase: function (inst, dbName, fn, run) {
+</span>        var q = Nodext.String.format(this.$_createDataBase, dbName);
+        var me = this, compile = me.queryCompile(inst, q);
+        if (typeof run === &quot;undefined&quot; || run === true) {
+            var config = {
+                results: compile,
+                callback: fn
+            };
+            this.initQuery(inst, config);
+        } else {
+            return compile;
+        }
+        me = q = compile = null;
+    },
+<span id='Nodext-database-query-Forge-method-dropDatabase'>    dropDatabase: function (inst, dbName, fn, run) {
+</span>        var q = Nodext.String.format(this.$_dropDataBase, dbName);
+        var me = this, compile = me.queryCompile(inst, q);
+        if (typeof run === &quot;undefined&quot; || run === true) {
+            var config = {
+                results: compile,
+                callback: fn
+            };
+            this.initQuery(inst, config);
+        } else {
+            return compile;
+        }
+        me = q = compile = null;
+    },
+<span id='Nodext-database-query-Forge-method-alterTableSchema'>    alterTableSchema: function (inst, obj) {
+</span>        var ifExists = obj.ifExists || &#39;normal&#39;;
+        var q = &quot;&quot;;
+        if (ifExists === &quot;ignore&quot;) {
+            q = this.$_createSchemaIfNotExists;
+        } else if (ifExists === &quot;drop&quot;) {
+            q = this.$_dropSchemaIfExists + &quot;;\n&quot; + this.$_createSchema;
+        } else if (ifExists === &quot;normal&quot;) {
+            q = this.$_createSchema;
+        }
+        var newSchema = this.escape_identifiers(obj.newSchema);
+        q = Nodext.String.format(q, newSchema) + &quot;;&quot;;
+
+        var root = (obj.schema ? obj.schema + &quot;.&quot; : &quot;&quot;) + obj.table;
+        root = this.escape_identifiers(root);
+        obj.query = Nodext.String.format(q + &quot;ALTER TABLE {1} SET SCHEMA {0}&quot;, newSchema, root) + &quot;;&quot;;
+        q = null;
+        var rsForge = this.createRsForge(inst, obj);
+        return rsForge;
+    },
+<span id='Nodext-database-query-Forge-method-alterTableAddColumn'>//    alterTable: function () {
+</span>//
+//    },
+    alterTableAddColumn: function (inst, obj) {
+        var mods = {
+            before: [],
+            after: []
+        };
+        var qColumns = &quot;&quot;;
+        var root = (obj.schema ? obj.schema + &quot;.&quot; : &quot;&quot;) + obj.table;
+        root = this.escape_identifiers(root);
+        if (Array.isArray(obj.columns)) {
+            qColumns = this._createColumns(obj.columns, mods);
+            for (var x = 0; x &lt; qColumns.length; x++) {
+                qColumns[x] = &quot;ADD COLUMN &quot; + qColumns[x];
+            }
+            qColumns = qColumns.join(&quot;,&quot;);
+        }
+        var qBefore = mods.before.join(&quot;\n&quot;);
+        var qAfter = mods.after.join(&quot;\n&quot;);
+        Ext.destroyObject(mods);
+        obj.query = Nodext.String.format(&quot;{2};ALTER TABLE {0} {1};{3}&quot;, root, qColumns, qBefore, qAfter);
+        return this.createRsForge(inst, obj);
+    },
+<span id='Nodext-database-query-Forge-method-alterTableAlterColumn'>    alterTableAlterColumn: function (inst, obj) {
+</span>        var root = (obj.schema ? obj.schema + &quot;.&quot; : &quot;&quot;) + obj.table;
+        root = this.escape_identifiers(root);
+        var qColumns = &quot;&quot;;
+        var mods = {
+            before: [],
+            after: []
+        };
+        if (Array.isArray(obj.columns)) {
+            qColumns = this._alterColumns(obj.columns, mods);
+            qColumns = qColumns.length &gt; 0 ? qColumns.join(&quot;,&quot;) : &quot;&quot;;
+        }
+        var qBefore = mods.before.join(&quot;\n&quot;);
+        var qAfter = mods.after.join(&quot;\n&quot;);
+        Ext.destroyObject(mods);
+        obj.query = Nodext.String.format(&quot;{2};ALTER TABLE {0} {1};{3}&quot;, root, qColumns, qBefore, qAfter);
+        return this.createRsForge(inst, obj);
+    },
+<span id='Nodext-database-query-Forge-method-_alterColumns'>    _alterColumns: function (columns, mods) {
+</span>        var x, col;
+        var listColumns = [], d;
+        for (x = 0; x &lt; columns.length; x++) {
+            col = columns[x];
+            if (Ext.isObject(col)) {
+                d = this._buildAlterColumn(col, mods);
+                if (d) {
+                    listColumns.push(d);
+                }
+            }
+        }
+        x = col = d = null;
+        return listColumns;
+    },
+<span id='Nodext-database-query-Forge-method-_calculeAlterTypeColumn'>    _calculeAlterTypeColumn: function (name, type, typeLength, col) {
+</span>        if ((type.toLowerCase() === &quot;char&quot; || type.toLowerCase() === &quot;varchar&quot;) &amp;&amp; typeLength) {
+            type = type + &quot;(&quot; + typeLength + &quot;)&quot;;
+        }
+        var using = &quot;&quot;;
+        if (col.fnParser) {
+            if (Nodext.isObject(col.fnParser)) {
+                if (col.oldType &amp;&amp; col.oldCfgType) {
+                    if (col.oldCfgType.type &amp;&amp; col.fnParser[col.oldCfgType.type]) {
+                        using = Nodext.String.format(&#39;{0}({1})&#39;, col.fnParser[col.oldCfgType.type], this.escape_identifiers(name));
+                    } else if (col.fnParser[&quot;default&quot;]) {
+                        using = Nodext.String.format(&#39;{0}({1})&#39;, col.fnParser[&quot;default&quot;], this.escape_identifiers(name));
+                    } else {
+                        using = Nodext.String.format(&#39;{0}::{1}&#39;, this.escape_identifiers(name), type);
+                    }
+                }
+            } else {
+                using = Nodext.String.format(&#39;{0}({1})&#39;, col.fnParser, this.escape_identifiers(name));
+            }
+        } else {
+            using = Nodext.String.format(&#39;{0}::{1}&#39;, this.escape_identifiers(name), type);
+        }
+        return Nodext.String.format(&quot;ALTER COLUMN {0} TYPE {1} USING {2}&quot;, this.escape_identifiers(name), type, using);
+    },
+<span id='Nodext-database-query-Forge-method-_buildAlterColumn'>    _buildAlterColumn: function (col, mods) {
+</span>        col.type = Nodext.isString(col.type) ? col.type.toUpperCase() : null;
+        col.oldType = Nodext.isString(col.oldType) ? col.oldType.toUpperCase() : null;
+        if (col.oldType &amp;&amp; this._castTypeField[col.oldType]) {
+            if (Ext.isObject(this._castTypeField[col.oldType].postgre)) {
+                col.oldType = this._castTypeField[col.oldType].postgre.type;
+            } else {
+                col.oldType = this._castTypeField[col.oldType].postgre;
+            }
+        } else {
+            col.oldType = &quot;DEFAULT&quot;;
+            col.oldCfgType = {};
+        }
+        var castType;
+        if (this._castTypeField[col.type]) {
+            castType = this._castTypeField[col.type].postgre;
+            if (Ext.isObject(castType)) {
+                Nodext.apply(col, Nodext.clone(castType));
+            } else {
+                col.type = castType;
+            }
+            castType = null;
+        }
+        if (this._castTypeField[col.oldType]) {
+            castType = this._castTypeField[col.oldType].postgre;
+            col.oldCfgType = col.oldCfgType || {};
+            if (Ext.isObject(castType)) {
+                Nodext.apply(col.oldCfgType, Nodext.clone(castType));
+            } else {
+                col.oldCfgType = castType;
+            }
+            castType = null;
+        }
+
+        var query = [];
+        var name = col.name || &quot;&quot;,
+                type = col.type || &quot;&quot;,
+                typeLength = col.length,
+                constraint = col.constraint;
+//                not_null = &quot;&quot;,
+//                defaultValue = col.defaultValue;
+
+        if (type) {
+            query.push(this._calculeAlterTypeColumn(name, type, typeLength, col));
+        }
+
+        if (col.hasOwnProperty(&quot;notNull&quot;)) {
+            query.push(Nodext.String.format(&quot;ALTER COLUMN {0} {1}&quot;, this.escape_identifiers(name), col.notNull ? &quot; SET NOT NULL&quot; : &quot;DROP NOT NULL&quot;));
+        }
+
+
+
+        if (col.hasOwnProperty(&quot;auto&quot;)) {
+            if (col.auto === false) {
+                mods.before.push(Nodext.String.format(this.$_DropSequenceIfExists, this.escape_identifiers(name)));
+                query.push(Nodext.String.format(&quot;ALTER COLUMN {0} {1}&quot;, this.escape_identifiers(name), &#39;DROP DEFAULT&#39;));
+            } else {
+                if (col.autoType === &quot;RESET&quot;) {
+                    mods.before.push(Nodext.String.format(this.$_DropSequenceIfExists, this.escape_identifiers(name)));
+                    mods.before.push(Nodext.String.format(this.$_CreateSequenceIfNotExists, this.escape_identifiers(col.auto)));
+                } else if (col.autoType === &quot;CONTINUE&quot;) {
+                    mods.before.push(Nodext.String.format(this.$_CreateSequenceIfNotExists, this.escape_identifiers(col.auto)));
+                } else if (col.autoType === &quot;NORMAL&quot; || col.autoType === null) {
+                    mods.before.push(Nodext.String.format(this.$_CreateSequenceIfNotExists, this.escape_identifiers(col.auto)));
+                }
+                var defaultValue = Nodext.String.format(this.$_UseSequence, this.escape_identifiers(col.auto));
+                query.push(Nodext.String.format(&quot;ALTER COLUMN {0} {1}&quot;, this.escape_identifiers(name), &#39;SET DEFAULT &#39; + defaultValue));
+            }
+        }
+
+
+        if (query.length &gt; 0) {
+            return query.join(&quot;,&quot;);
+        } else {
+            return null;
+        }
+//        if (col.auto &amp;&amp; col.useSequence) {
+//            Nodext.logEvent(&quot;Se esta usando el modo secuencia&quot;);
+//            if (Nodext.isBoolean(col.auto)) {
+//                col.type = col.typeCastAutoIncrement;
+//            } else if (Nodext.isString(col.auto)) {
+//                defaultValue = Nodext.String.format(this.$_tplUseSequence, this.escape_identifiers(col.auto));
+//                var qMods = Nodext.String.format(this.$_tplCreateSequence, this.escape_identifiers(col.auto)) + &quot;;&quot;;
+//                if (qMods &amp;&amp; qMods !== &quot;&quot;) {
+//                    mods.before.push(qMods);
+//                }
+//            } else {
+//                Nodext.logError(&quot;El modo sequiencia fallo&quot;);
+//            }
+//        } else if (col.auto) {
+//            Nodext.logError(&quot;No se implemento esta seccion del autoincrement o identity&quot;);
+//        }
+//
+//        if (type.toLowerCase() === &quot;char&quot; || type.toLowerCase() === &quot;varchar&quot;) {
+//            type = type + &quot;(&quot; + typeLength + &quot;)&quot;;
+//        }
+//
+//        type = &quot; TYPE &quot; + type;
+//
+////        if (Nodext.isObject(constraint)) {
+////            constraint = &quot;CONSTRAINT &quot; + this.escape_identifiers((constraint.name || &quot;&quot;)) + &quot; &quot; + (constraint.condition || &quot;&quot;);
+////        } else if (!Nodext.isString(constraint)) {
+////            constraint = &quot;&quot;;
+////        }
+//        if (defaultValue) {
+//            if (col.defaultIsValue) {
+//                defaultValue = &#39; DEFAULT &#39; + this.escape(defaultValue);
+//            } else {
+//                defaultValue = &#39; DEFAULT &#39; + defaultValue;
+//            }
+//        } else {
+//            defaultValue = &quot;&quot;;
+//        }
+//        return Nodext.String.format(&#39;{0} {1} {2}{3}{4}&#39;, this.escape_identifiers(name), type, constraint, defaultValue, not_null);
+    },
+<span id='Nodext-database-query-Forge-method-alterTableName'>    alterTableName: function (inst, obj) {
+</span>        var root = this.escape_identifiers((obj.schema ? obj.schema + &quot;.&quot; : &quot;&quot;) + obj.table);
+        var newName = this.escape_identifiers(obj.renameTo);
+        obj.query = Nodext.String.format(&quot;ALTER TABLE {0} RENAME TO {1};&quot;,
+                root,
+                newName);
+
+        var rsForge = this.createRsForge(inst, obj);
+        return rsForge;
+    },
+<span id='Nodext-database-query-Forge-method-dropTable'>    dropTable: function (inst, obj) {
+</span>        var root = this.escape_identifiers((obj.schema ? obj.schema + &quot;.&quot; : &quot;&quot;) + obj.table);
+        obj.query = Nodext.String.format(&quot;DROP TABLE {0};&quot;, root);
+
+        var rsForge = this.createRsForge(inst, obj);
+        return rsForge;
+    },
+<span id='Nodext-database-query-Forge-method-createTable'>    createTable: function (inst, obj) {
+</span>        var q = &quot;&quot;;
+        var ifExists = obj.ifExists || &#39;normal&#39;;
+        if (ifExists === &quot;ignore&quot;) {
+            q = this.$_createTableIfNotExists;
+        } else if (ifExists === &quot;drop&quot;) {
+            q = this.$_dropTableIfExists + &quot;;\n&quot; + this.$_createTable;
+        } else if (ifExists === &quot;normal&quot;) {
+            q = this.$_createTable;
+        }
+        var root = (obj.schema ? obj.schema + &quot;.&quot; : &quot;&quot;) + obj.table;
+        root = this.escape_identifiers(root);
+        var qColumns = &quot;&quot;;
+        var mods = {
+            before: [],
+            after: []
+        };
+        if (Array.isArray(obj.columns)) {
+            qColumns = this._createColumns(obj.columns, mods);
+            qColumns = qColumns.join(&quot;,&quot;);
+        }
+        var qBefore = mods.before.join(&quot;\n&quot;);
+        var qAfter = mods.after.join(&quot;\n&quot;);
+        Ext.destroyObject(mods);
+
+        obj.query = qBefore + Nodext.String.format(q, root, qColumns) + qAfter;
+        q = null;
+        var rsForge = this.createRsForge(inst, obj);
+        return rsForge;
+    },
+<span id='Nodext-database-query-Forge-method-_createColumns'>    _createColumns: function (columns, mods) {
+</span>        var x, col;
+        var listColumns = [];
+        for (x = 0; x &lt; columns.length; x++) {
+            col = columns[x];
+            if (Ext.isObject(col)) {
+                listColumns.push(this._buildColumn(col, mods));
+            }
+        }
+        return listColumns;
+    },
+<span id='Nodext-database-query-Forge-method-_buildColumn'>    _buildColumn: function (col, mods) {
+</span>        if (!col) {
+            col = {
+                type: &quot;VARCHAR&quot;
+            };
+            Nodext.logError(&quot;columna no definida asumiendo VARCHAR por defecto&quot;);
+        } else if (!Nodext.isString(col.type)) {
+            col.type = &#39;VARCHAR&#39;;
+            Nodext.logError(&quot;Columnas TYPE no es un string, asumiendo VARCHAR&quot;);
+        }
+        col.type = col.type.toUpperCase();
+
+        if (!this._castTypeField[col.type]) {
+            Nodext.logError(&quot;La columna &quot; + col.type + &quot; no existe en la configuraciones, asumiendo VARCHAR por defecto&quot;);
+        }
+        var castType;
+        if (this._castTypeField[col.type]) {
+            castType = this._castTypeField[col.type].postgre;
+            if (Ext.isObject(castType)) {
+                Nodext.apply(col, Nodext.clone(castType));
+            } else {
+                col.type = castType;
+            }
+            castType = null;
+        }
+        var name = col.name || &quot;&quot;,
+                type = col.type || &quot;&quot;,
+                typeLength = col.length,
+                constraint = col.constraint,
+                not_null = &quot;&quot;,
+                defaultValue = col.defaultValue;
+        if (col.auto &amp;&amp; col.useSequence) {
+            Nodext.logEvent(&quot;Se esta usando el modo secuencia&quot;);
+            if (Nodext.isBoolean(col.auto)) {
+                col.type = col.typeCastAutoIncrement;
+            } else if (Nodext.isString(col.auto)) {
+                defaultValue = Nodext.String.format(this.$_UseSequence, this.escape_identifiers(col.auto));
+                var qMods = Nodext.String.format(this.$_CreateSequence, this.escape_identifiers(col.auto));
+                if (qMods &amp;&amp; qMods !== &quot;&quot;) {
+                    mods.before.push(qMods);
+                }
+            } else {
+                Nodext.logError(&quot;El modo sequiencia fallo&quot;);
+            }
+        } else if (col.auto) {
+            Nodext.logError(&quot;No se implemento esta seccion del autoincrement o identity&quot;);
+        }
+
+        if (typeLength &amp;&amp; (type.toLowerCase() === &quot;char&quot; || type.toLowerCase() === &quot;varchar&quot;)) {
+//        if (type.toLowerCase() === &quot;char&quot; || type.toLowerCase() === &quot;varchar&quot;){
+            type = type + &quot;(&quot; + typeLength + &quot;)&quot;;
+        }
+
+        if (Nodext.isObject(constraint)) {
+
+            if (constraint.type === &quot;PK&quot;) {
+                constraint.condition = &quot;PRIMARY KEY&quot;;
+                constraint = &quot;CONSTRAINT &quot; + this.escape_identifiers((constraint.name || &quot;&quot;)) + &quot; &quot; + (constraint.condition || &quot;&quot;);
+            }
+
+
+
+        } else if (!Nodext.isString(constraint)) {
+            constraint = &quot;&quot;;
+        }
+        if (defaultValue) {
+            if (col.defaultIsValue) {
+                defaultValue = &#39; DEFAULT &#39; + this.escape(defaultValue);
+            } else {
+                defaultValue = &#39; DEFAULT &#39; + defaultValue;
+            }
+        } else {
+            defaultValue = &quot;&quot;;
+        }
+        if (col.hasOwnProperty(&quot;notNull&quot;)) {
+            not_null = col.notNull ? &quot; NOT NULL &quot; : &quot; NULL&quot;;
+        }
+        return Nodext.String.format(&#39;{0} {1} {2}{3}{4}&#39;, this.escape_identifiers(name), type, constraint, defaultValue, not_null);
+    }
+});</pre>
+</body>
+</html>

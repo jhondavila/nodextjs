@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-socket-IO-Socket'>/**
+</span> * 
+ */
+Nodext.define(&quot;Nodext.socket.IO.Socket&quot;, {
+    extend: &quot;Ext.Base&quot;,
+    requires: [&quot;Nodext.socket.IO.Instance&quot;],
+<span id='Nodext-socket-IO-Socket-property-S-configPrefixed'>    $configPrefixed: false,
+</span><span id='Nodext-socket-IO-Socket-property-S-configStrict'>    $configStrict: false,
+</span>    mixins: [&quot;Ext.util.Observable&quot;, &quot;Nodext.util.HookClass&quot;],
+    config: {
+<span id='Nodext-socket-IO-Socket-cfg-io'>        io: null,
+</span><span id='Nodext-socket-IO-Socket-cfg-events'>        events: null,
+</span><span id='Nodext-socket-IO-Socket-cfg-nameSpace'>        nameSpace: null,
+</span><span id='Nodext-socket-IO-Socket-cfg-nsp'>        nsp: null,
+</span><span id='Nodext-socket-IO-Socket-cfg-DBcnxName'>        DBcnxName: null,
+</span><span id='Nodext-socket-IO-Socket-cfg-DBCnxAuto'>        DBCnxAuto: false,
+</span><span id='Nodext-socket-IO-Socket-cfg-authUser'>        authUser: false
+</span>    },
+<span id='Nodext-socket-IO-Socket-method-constructor'>    constructor: function (config) {
+</span>        Nodext.apply(this, config);
+        this.initConfig(config);
+        this.mixins.observable.constructor.call(this, config);
+        this.initNameSpace();
+        this.hookLoad();
+        this.initSocket();
+    },
+<span id='Nodext-socket-IO-Socket-method-getClassOfMgr'>    getClassOfMgr: function (g, cls) {
+</span>        return this.socketIO.getClassOfMgr(g, cls);
+    },
+<span id='Nodext-socket-IO-Socket-method-initNameSpace'>    initNameSpace: function () {
+</span>        var nameSpace = this.nameSpace;
+        if (nameSpace) {
+            this.nsp = this.io.of(nameSpace);
+            this.nsp._space = this;
+        } else {
+            this.nsp = this.io.of(&quot;/&quot;);
+            this.nsp._space = this;
+        }
+        if (this.authUser) {
+            Nodext.SManager.socketNspSession(this.nsp);
+        }
+        nameSpace = null;
+    },
+<span id='Nodext-socket-IO-Socket-method-initSocket'>    initSocket: function () {
+</span>        var me = this;
+        // this.nsp.on(&#39;connection&#39;, this._onConnection.bind(this));
+        if (this.initSpace) {
+            var space = this.newInstanceSpace(this);
+            this.initSpace(space);
+        }
+    },
+<span id='Nodext-socket-IO-Socket-method-newInstanceSpace'>    // _onConnection: function (socket) {
+</span>    //     socket._space = this;
+    //     var instSocket = this.newInstance(socket);
+    //     this.fireEvent(&quot;connect&quot;, instSocket, this);
+    // },
+    newInstanceSpace: function (space) {
+        var cfg = {
+            space: space,
+            // nameSpace: this,
+            // nsp: this,
+            autoInit: true,
+            // idDomain: req.idDomain || undefined,
+            DBScope: this,
+            DBcnxName: this.DBcnxName
+        };
+        return Ext.create(&quot;Nodext.socket.IO.ISpace&quot;, cfg);
+    },
+<span id='Nodext-socket-IO-Socket-method-newInstance'>    newInstance: function (socket) {
+</span>        var cfg = {
+            socket: socket,
+            nameSpace: this,
+            nsp: this,
+            autoInit: true,
+            // idDomain: req.idDomain || undefined,
+            DBScope: this,
+            DBcnxName: this.DBcnxName
+        };
+        return Ext.create(&quot;Nodext.socket.IO.Instance&quot;, cfg);
+    },
+<span id='Nodext-socket-IO-Socket-method-disconnect'>    disconnect: function () {
+</span>        if (!this.socket) {
+            return false;
+        } else {
+            this.socket.disconnect();
+            return true;
+        }
+    },
+<span id='Nodext-socket-IO-Socket-method-emitNsp'>    emitNsp: function (name, data) {
+</span>        this.nsp.emit(name, data);
+    },
+<span id='Nodext-socket-IO-Socket-method-emitDistinct'>    emitDistinct: function (sktInst) {
+</span>        if (sktInst.destroyed) {
+            return;
+        }
+        // debugger
+        var args = Array.prototype.slice.call(arguments, 1);
+        sktInst.socket.broadcast.emit.apply(sktInst.socket, args);
+    },
+<span id='Nodext-socket-IO-Socket-method-emitIdList'>    emitIdList: function (sktInst, array) {
+</span>        if (sktInst.destroyed) {
+            return;
+        }
+        var socket = sktInst.socket;
+        socket._rooms = socket._rooms.concat(array);
+        var args = Array.prototype.slice.call(arguments, 2);
+        socket.emit.apply(socket, args);
+    },
+<span id='Nodext-socket-IO-Socket-method-emitBasicIdList'>    emitBasicIdList: function (sktInst, array) {
+</span>        if (sktInst.destroyed) {
+            return;
+        }
+        var socket = sktInst.socket;
+        for (var x = 0; x &lt; array.length; x++) {
+            socket._rooms.push(this.nsp.name + &quot;#&quot; + array[x]);
+        }
+        var args = Array.prototype.slice.call(arguments, 2);
+        socket.emit.apply(socket, args);
+    }
+    ///////////////////////
+    ///////////////////////
+    ///////////////////////
+    ///////////////////////
+    ///////////////////////
+});</pre>
+</body>
+</html>

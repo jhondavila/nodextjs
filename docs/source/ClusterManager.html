@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-app-master-ClusterManager'>/**
+</span> * 
+ */
+Nodext.define(&quot;Nodext.app.master.ClusterManager&quot;, {
+    extend: &quot;Ext.Base&quot;,
+    alternateClassName: [&quot;Nodext.app.ClusterMgr&quot;],
+    singleton: true,
+<span id='Nodext-app-master-ClusterManager-property-clusters'>    clusters: Nodext.create(&quot;Ext.util.Collection&quot;),
+</span><span id='Nodext-app-master-ClusterManager-method-register'>    register: function (cluster) {
+</span>        if (this.clusters.getByKey(cluster.id)) {
+            Nodext.logWarn(&quot;Advertencia: id Cluster duplicado,generando nuevo Id.&quot;);
+            cluster.generateId();
+        } else if (!cluster.id) {
+            cluster.generateId();
+        }
+        this.clusters.add(cluster);
+    }
+});</pre>
+</body>
+</html>

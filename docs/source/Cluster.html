@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-app-master-Cluster'>/**
+</span> * 
+ */
+Nodext.define(&quot;Nodext.app.master.Cluster&quot;, {
+    extend: &quot;Nodext.app.master.Base&quot;,
+    requires: [
+        &quot;Nodext.app.master.Thread&quot;
+    ],
+<span id='Nodext-app-master-Cluster-property-equip'>    equip: null,
+</span><span id='Nodext-app-master-Cluster-property-user'>    user: null,
+</span><span id='Nodext-app-master-Cluster-property-pid'>    pid: null,
+</span><span id='Nodext-app-master-Cluster-property-node_ver'>    node_ver: null,
+</span>    config: {
+<span id='Nodext-app-master-Cluster-cfg-autoThread'>        /**
+</span>         * @cfg {Boolean} autoThread
+         * Genera los thread de manera automatica cuando el valor es &#39;true&#39;
+         */
+        autoThread: true,
+<span id='Nodext-app-master-Cluster-cfg-text'>        /**
+</span>         * @cfg {String} text
+         * Descripcion del Cluster
+         */
+        text: null,
+<span id='Nodext-app-master-Cluster-cfg-expanded'>        /**
+</span>         * @cfg {Boolean} expanded
+         * Indica al formato JSON que este elemento mostrara sus subelementos
+         * cuando su valor sea true.
+         */
+        expanded: true,
+    },
+<span id='Nodext-app-master-Cluster-property-leaf'>    /**
+</span>     * @property {Boolean} leaf
+     * Indica al formato JSON que este elemento contiene subelementos.
+     * @private
+     */
+    leaf: false,
+<span id='Nodext-app-master-Cluster-property-type'>    /**
+</span>     * @property {String} type
+     * @private
+     * Indica al formato JSON que este elemento es de tipo &#39;cluster&#39;
+     */
+    type: &quot;cluster&quot;,
+<span id='Nodext-app-master-Cluster-method-constructor'>    constructor: function () {
+</span>        Nodext.apply(this, {
+            equip: process.env.USERDOMAIN,
+            user: process.env.USERNAME,
+            pid: process.pid,
+            node_ver: process.version
+        });
+        this.callParent(arguments);
+        // console.log(this.id)
+        if (this.autoThread) {
+            this.generateThreads();
+        }
+    },
+<span id='Nodext-app-master-Cluster-method-generateThreads'>    /**
+</span>     * @method generateThreads
+     * Genera la cantidad de Thread configurados como maximo.
+     */
+    generateThreads: function () {
+        var thread;
+        for (var i = 0; i &lt; this.totalThread; i++) {
+            var fork = false;
+            if (i &lt; this.totalServer) {
+                fork = true;
+            }
+            thread = Nodext.create(&quot;Nodext.app.master.Thread&quot;, {
+                id: Nodext.id(null, &quot;Thread-&quot;),
+                internalId: i
+            });
+            this.add(thread);
+            if (fork) {
+                thread.buildWorker();
+                thread.workerStart();
+            }
+        }
+    },
+<span id='Nodext-app-master-Cluster-method-add'>    /**
+</span>     * @method add
+     * Añade un Thread al cluster
+     * @param {Nodext.app.master.Thread|Object} thread
+     * @return {Nodext.app.master.Thread}
+     */
+    add: function (thread) {
+        if (thread instanceof Nodext.app.master.Thread) {
+            thread.setConfig({
+                cluster: this
+            });
+        } else {
+            Nodext.apply(thread, {
+                cluster: this
+            });
+            thread = Nodext.create(&quot;Nodext.app.master.Thread&quot;, thread);
+        }
+        return this.workers.add(thread);
+    },
+<span id='Nodext-app-master-Cluster-method-get'>    /**
+</span>     * @method get
+     * Devuelve el Thread asociado con el id
+     * @param {String|Number} id
+     * @return {Nodext.app.master.Thread}
+     */
+    get: function (id) {
+        return this.workers.get(id);
+    }
+});</pre>
+</body>
+</html>

@@ -1,0 +1,12 @@
+npm install --global --production windows-build-tools
+
+
+Descripción de DevKit
+
+DevKit es un conjunto de herramientas que facilita la creación y el uso de extensiones C / C ++ nativas, como RDiscount y RedCloth para Ruby en Windows.
+
+Simplemente descargue, haga doble clic, elija un directorio de instalación, ejecute el script Ruby install helper, posiblemente modifique un config.ymlarchivo para las especificaciones de su sistema, y ??estará listo para comenzar a usar las extensiones nativas de Ruby.
+
+Inicio rápido
+
+Descárguelo, ejecútelo para extraerlo en algún lugar ( permanente ). Luego cd, ejecuta ruby dk.rb inity ruby dk.rb installvincularlo a las instalaciones de ruby ??en tu camino.

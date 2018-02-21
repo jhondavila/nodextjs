@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-database-ResultGroup'>/**
+</span> * 
+ */
+Nodext.define(&quot;Nodext.database.ResultGroup&quot;, {
+    extend: &quot;Ext.Base&quot;,
+<span id='Nodext-database-ResultGroup-property-S-configPrefixed'>    $configPrefixed: false,
+</span>    mixins: {
+        observable: &#39;Ext.util.Observable&#39;
+    },
+    config: {
+<span id='Nodext-database-ResultGroup-cfg-id'>        id: null,
+</span><span id='Nodext-database-ResultGroup-cfg-callback'>        callback: null,
+</span><span id='Nodext-database-ResultGroup-cfg-inst'>        inst: null,
+</span><span id='Nodext-database-ResultGroup-cfg-results'>        results: null,
+</span><span id='Nodext-database-ResultGroup-cfg-resultCur'>        resultCur: null,
+</span><span id='Nodext-database-ResultGroup-cfg-resultIndex'>        resultIndex: null,
+</span><span id='Nodext-database-ResultGroup-cfg-openTrans'>        openTrans: null,
+</span><span id='Nodext-database-ResultGroup-cfg-escapeCommit'>        escapeCommit: 0,
+</span><span id='Nodext-database-ResultGroup-cfg-qb'>        qb: null,
+</span><span id='Nodext-database-ResultGroup-cfg-params'>        params: null,
+</span><span id='Nodext-database-ResultGroup-cfg-flagError'>        flagError: false,
+</span><span id='Nodext-database-ResultGroup-cfg-msgError'>        msgError: null,
+</span><span id='Nodext-database-ResultGroup-cfg-onErrorResMsg'>        onErrorResMsg: true
+</span>    },
+<span id='Nodext-database-ResultGroup-method-constructor'>    constructor: function (config) {
+</span>        Nodext.apply(this, config || {});
+        this.id = Nodext.id(null, &quot;rsGroup-&quot;);
+        this.initConfig(config);
+        this.mixins.observable.constructor.call(this, config);
+        this.result = this.result || [];
+    },
+<span id='Nodext-database-ResultGroup-method-init'>    init: function () {
+</span>        this.initConnection();
+    },
+<span id='Nodext-database-ResultGroup-method-getParams'>    getParams: function (item) {
+</span>        return this.params &amp;&amp; this.params[item] ? this.params[item] : null;
+    },
+<span id='Nodext-database-ResultGroup-method-initConnection'>    initConnection: function () {
+</span>        var me = this;
+        if (!me.inst.DBActiveCnx) {
+            me.inst.setActiveCnx();
+        } else if (me.inst.DBActiveCnx &amp;&amp; !me.inst.DBActiveCnx.open &amp;&amp; !me.inst.DBActiveCnx.init) {
+            //            console.log(&quot;existe una conexion pero no esta abierta ni inicializando&quot;)
+        } else if (me.inst.DBActiveCnx &amp;&amp; !me.inst.DBActiveCnx.open &amp;&amp; me.inst.DBActiveCnx.init) {
+            //            console.log(&quot;existe una conexion pero no esta abierta pero si inicializando&quot;)
+        } else if (me.inst.DBActiveCnx &amp;&amp; me.inst.DBActiveCnx.open &amp;&amp; me.inst.DBActiveCnx.init) {
+            console.log(&quot;la conexion se encuentra abierta debemos destruirla y volverla a crear&quot;);
+            me.inst.destroyDBCnx();
+            me.inst.setActiveCnx();
+        }
+        me.inst.DBActiveCnx.init = true;
+        me.inst.DBActiveCnx.connect(function (err, client) {
+            if (me.isDestroyed) {
+                me = null;
+                return false;
+            }
+            me.inst.DBActiveCnx.init = false;
+            if (err) {
+                me.inst.DBActiveCnx.setErrorCnx(true);
+                me.connectionFailure(err);
+            } else {
+                me.inst.DBActiveCnx.open = true;
+                me.fireEvent(&quot;connectionsuccess&quot;);
+                me.execStart();
+            }
+            me = null;
+        });
+    },
+<span id='Nodext-database-ResultGroup-method-destroyForce'>    destroyForce: function (client) {
+</span>        if (client.done) {
+            client.done();
+            client.done = null;
+        } else {
+            client.end();
+        }
+    },
+<span id='Nodext-database-ResultGroup-method-execStart'>    execStart: function () {
+</span>        this.resultIndex = 0;
+        this.openTrans = 0;
+        this.escapeCommit = 0;
+        this.resultCur = this.results[this.resultIndex];
+        this.fireEvent(&quot;executionstart&quot;, this, this.resultCur, this.resultIndex, this.results);
+        if (this.resultCur) {
+            this.beforeRunResult();
+        } else {
+            this.resultFailure({ message: &quot;Result no generated / result no found&quot; }, null);
+        }
+    },
+<span id='Nodext-database-ResultGroup-method-beforeRunResult'>    beforeRunResult: function () {
+</span>        //        console.log(&quot;beforeRunResult&quot;);
+        if (this.resultCur.action === &quot;read&quot;) {
+            if (!this.resultCur.compileReady) {
+                this.resultCur.compileQuery();
+            }
+            if (!this.resultCur.query) {
+                Nodext.trace(&quot;la consulta no se ha generado&quot;, &quot;red&quot;);
+                this.resultFailure({ message: &quot;Query no generated / query no found&quot; }, null);
+            } else {
+                this.fireEvent(&quot;beforequeryrun&quot;, this, this.resultCur, this.resultIndex, this.results);
+                this.resultCur.fireEvent(&quot;beforequery&quot;, this, this.resultCur, this.resultIndex, this.results);
+                this.runResult();
+            }
+        } else if (this.resultCur.action === &quot;transaction&quot;) {
+            if (this.resultCur.type === &quot;trans_start&quot;) {
+                if (this.openTrans !== 0) {
+                    this.resultCur.query = &quot;SAVEPOINT LEVEL&quot; + this.openTrans + &quot;;&quot;;
+                }
+                this.openTrans++;
+            } else if (this.resultCur.type === &quot;trans_complete&quot;) {
+                this.openTrans--;
+                if (this.openTrans &gt; 0) {
+                    this.resultCur.query = &quot;RELEASE SAVEPOINT LEVEL&quot; + this.openTrans + &quot;;&quot;;
+                }
+
+            } else if (this.resultCur.type === &quot;trans_rollback&quot;) {
+                this.openTrans--;
+                if (this.openTrans &gt; 0) {
+                    this.resultCur.query = &quot;ROLLBACK TO SAVEPOINT LEVEL&quot; + this.openTrans + &quot;;&quot;;
+                }
+            } else if (this.resultCur.type === &quot;trans_commit&quot;) {
+                this.openTrans--;
+                if (this.openTrans &gt; 0) {
+                    this.resultCur.query = &quot;RELEASE SAVEPOINT LEVEL&quot; + this.openTrans + &quot;;&quot;;
+                }
+            }
+            this.runResult();
+        } else if (this.resultCur.action) {
+            this.fireEvent(&quot;beforequeryrun&quot;, this, this.resultCur, this.resultIndex, this.results);
+            this.resultCur.fireEvent(&quot;beforequery&quot;, this, this.resultCur, this.resultIndex, this.results);
+            this.runResultBatch();
+        } else {
+            this.resultFailure({ message: &quot;Result no action&quot; }, null)
+        }
+    },
+<span id='Nodext-database-ResultGroup-method-runResultBatch'>    runResultBatch: function () {
+</span>        var me = this;
+        if (me.resultCur.continue()) {
+            var q = me.resultCur.getNext(me);
+            //            console.log(q);
+            me.inst.DBActiveCnx.query(q, function (err, result) {
+                if (me.isDestroyed) {
+                    me = null;
+                    return false;
+                }
+                if (err) {
+                    me.resultFailure(err, result);
+                } else {
+                    me.resultCur.setResultBatch(result);
+                    if (me.resultCur.continue()) {
+                        me.runResultBatch();
+                    } else {
+                        if (!me.resultSuccess()) {
+                            return;
+                        }
+                        me.afterRunResult();
+                    }
+                    me = null;
+                }
+            });
+        } else {
+            me.afterRunResult();
+        }
+    },
+<span id='Nodext-database-ResultGroup-method-runResult'>    runResult: function () {
+</span>        var me = this;
+        //        console.log(me.resultCur.query.green);
+        me.inst.DBActiveCnx.query(me.resultCur.query, function (err, result) {
+            if (me.isDestroyed) {
+                me = null;
+                return false;
+            }
+            if (err) {
+                me.resultFailure(err, result);
+            } else {
+                me.resultOk(result);
+            }
+            me = null;
+        });
+    },
+<span id='Nodext-database-ResultGroup-method-resultOk'>    resultOk: function (result) {
+</span>        //        console.log(&quot;resultOk&quot;);
+        this.resultCur.result = result;
+        if (!this.resultSuccess()) {
+            return;
+        }
+        this.afterRunResult();
+    },
+<span id='Nodext-database-ResultGroup-method-connectionFailure'>    connectionFailure: function (err) {
+</span>        var s = this.fireEvent(&quot;connectionexception&quot;);
+        if (s === false) {
+            console.log(&quot;el desarrollador impidio el envio de error de conexion del servidor usted debe programar una salida al cliente manualmente&quot;);
+            console.log(&quot;Si se detiene el proceso, revisar el usuario y contraseña , por que si se establecio conexion con el servidor&quot;);
+            return true;
+        } else {
+            if (this.destroyed) {
+                return false;
+            }
+            var cnx = Nodext.db.Mgr.getCnx(this.inst.DBcnxName);
+            if (cnx &amp;&amp; this.onErrorResMsg) {
+                cnx.sendConnectionError(this.inst, err);
+            }
+            cnx = null;
+            return;
+        }
+    },
+<span id='Nodext-database-ResultGroup-method-resultFailure'>    resultFailure: function (err, result) {
+</span>        if (this.isDestroyed) {
+            //            DBActiveCnx.end();
+            //            DBActiveCnx = me = null;
+            return false;
+        }
+
+
+        this.fireEvent(&quot;queryrunexception&quot;, this, this.resultCur, err, this.resultIndex, this.results);
+        if (this.resultCur) {
+            //            console.log(&quot;onfailure&quot;);
+            this.resultCur.fireEvent(&quot;onfailure&quot;, this, this.resultCur, err, this.resultIndex, this.results);
+            var oContinue = this.resultCur.getOnErrorContinue(), tContinue = this.resultCur.getOnTransFailContinue();
+            if (oContinue &amp;&amp; this.openTrans === 0) {
+                this.resultOk(result);
+            } else if (tContinue &amp;&amp; this.openTrans &gt; 0) {
+                this.onTransFailureContinue(err, result);
+            } else {
+                if (this.openTrans &gt; 0) {
+                    this.onTransFailure(err, result, this.resultCur.getOnErrorResMsg());
+                } else {
+                    if (this.resultCur.getOnErrorResMsg()) {
+                        var cnx = Nodext.db.Mgr.getCnx(this.inst.DBcnxName);
+                        if (cnx) {
+                            cnx.sendQueryError(this.inst, this.resultCur.getQuery(), err);
+                        }
+                        cnx = null;
+                    }
+                }
+            }
+        } else {
+            var cnx = Nodext.db.Mgr.getCnx(this.inst.DBcnxName);
+            if (cnx) {
+                cnx.sendQueryError(this.inst, null, err);
+            }
+        }
+    },
+<span id='Nodext-database-ResultGroup-method-onTransFailureContinue'>    onTransFailureContinue: function (errBase, result) {
+</span>        var query = &quot;&quot;;
+        this.openTrans--;
+        if (this.openTrans &gt; 0) {
+            query += &quot;ROLLBACK TO SAVEPOINT LEVEL&quot; + this.openTrans + &quot;;&quot;;
+            var i = this.resultIndex + 1, rCommit;
+            for (; i &lt; this.results.length; i++) {
+                if (this.results[i].type === &quot;trans_commit&quot; || this.results[i].type === &quot;trans_complete&quot;) {
+                    rCommit = i;
+                    break;
+                }
+            }
+            if (rCommit != -1) {
+                this.results.splice(rCommit, 1);
+            }
+
+        } else {
+            query += &quot;ROLLBACK;&quot;;
+        }
+        var me = this;
+        this.inst.DBActiveCnx.query(query, function () {
+            //            console.log(query.green);
+            me.resultCur.fireEvent(&quot;afterrollback&quot;, me, me.resultCur, me.resultIndex, me.results);
+            me.resultOk(result);
+        });
+    },
+<span id='Nodext-database-ResultGroup-method-getQueryRollBack'>    getQueryRollBack: function () {
+</span>        var query = &quot;&quot;;
+        this.openTrans--;
+        while (this.openTrans &gt; 0) {
+            query += &quot;ROLLBACK TO SAVEPOINT LEVEL&quot; + this.openTrans + &quot;;&quot;;
+            this.openTrans--;
+        }
+        query += &quot;ROLLBACK;END TRANSACTION&quot;;
+        return query;
+    },
+<span id='Nodext-database-ResultGroup-method-onTransFailure'>    onTransFailure: function (errBase, result, sendError) {
+</span>        var me = this, query = &quot;&quot;;
+        me.resultCur.fireEvent(&quot;beforerollback&quot;, me, me.resultCur, errBase, me.resultIndex, me.results);
+        query = this.getQueryRollBack();
+        //        this.openTrans--;
+        //        while (this.openTrans &gt; 0) {
+        //            query += &quot;ROLLBACK TO SAVEPOINT LEVEL&quot; + this.openTrans + &quot;;&quot;;
+        //            this.openTrans--;
+        //        }
+        //        query += &quot;ROLLBACK;END TRANSACTION&quot;;
+        this.inst.DBActiveCnx.query(query, function () {
+            me.resultCur.fireEvent(&quot;afterrollback&quot;, me, me.resultCur, me.resultIndex, me.results);
+            var cnx = Nodext.db.Mgr.getCnx(me.inst.DBcnxName);
+            if (cnx) {
+                cnx.sendQueryError(me.inst, me.resultCur.query, errBase);
+            }
+            cnx = null;
+            if (me.inst &amp;&amp; me.inst.autoCloseDB) {
+                me.inst.DBActiveCnx.close();
+            }
+            delete (me, errBase, result);
+        });
+    },
+<span id='Nodext-database-ResultGroup-method-resultSuccess'>    resultSuccess: function (err, result) {
+</span>        var a = this.fireEvent(&quot;queryrunsuccess&quot;, this, this.resultCur, this.resultIndex, this.results);
+        var b = this.resultCur.fireEvent(&quot;onsuccess&quot;, this, this.resultCur, this.resultIndex, this.results);
+        if (a === false || b === false) {
+            if (this.flagError) {
+                this.inst.sendError({
+                    success: false,
+                    message: this.msgError
+                });
+            }
+            return false;
+        } else {
+            return true;
+        }
+    },
+<span id='Nodext-database-ResultGroup-method-afterRunResult'>    afterRunResult: function () {
+</span>        var a = this.fireEvent(&quot;afterqueryrun&quot;, this, this.resultCur, this.resultIndex, this.results);
+        var b = this.resultCur.fireEvent(&quot;afterquery&quot;, this, this.resultCur, this.resultIndex, this.results);
+        if (a === false || b === false) {
+            if (this.flagError) {
+                this.inst.sendError({
+                    success: false,
+                    message: this.msgError
+                });
+            }
+            return false;
+        }
+
+        if (this.resultIndex + 1 &lt; this.results.length) {
+            this.resultIndex++;
+            this.resultCur = this.results[this.resultIndex];
+            this.beforeRunResult();
+        } else {
+            if (this.openTrans &gt; 0) {
+                Nodext.logError(&quot;Transaccion no cerrada&quot;);
+                var query = this.getQueryRollBack();
+                var compiles = this.resultCur.qb.query(this.inst, query, null, false);
+                this.results.push(compiles[0]);
+                this.resultIndex++;
+                this.resultCur = this.results[this.resultIndex];
+                this.beforeRunResult();
+            } else {
+                this.resultGroupComplete();
+            }
+        }
+    },
+<span id='Nodext-database-ResultGroup-method-resultGroupComplete'>    resultGroupComplete: function () {
+</span>        if (this.inst.autoCloseDB) {
+            // console.log(&quot;cerrando conexion&quot;)
+            this.inst.DBActiveCnx.close();
+        }
+        var inst = this.inst || {},
+            scope = inst.DBScope || this;
+        try {
+            this.callback.call(scope, this, this.results, this.inst);
+        } catch (e) {
+            var cnx = Nodext.db.Mgr.getCnx(this.inst.DBcnxName);
+            cnx.sendCallbackError(this.inst, e);
+        }
+    },
+<span id='Nodext-database-ResultGroup-method-execFinish'>    execFinish: function () {
+</span>        this.fireEvent(&quot;executionend&quot;, this, this.resultCur, this.resultIndex, this.results);
+    },
+<span id='Nodext-database-ResultGroup-method-next'>    next: function () {
+</span>        return this.results[this.resultIndex + 1] ? this.results[this.resultIndex + 1] : null;
+    },
+<span id='Nodext-database-ResultGroup-method-destroy'>    destroy: function () {
+</span>        Nodext.destroy(this.results);
+        this.clearListeners();
+        this.callParent();
+        this.inst = this.resultCur = null;
+        Nodext.destroyClass(this);
+        delete this;
+    },
+<span id='Nodext-database-ResultGroup-method-insertResult'>    insertResult: function (results, index) {
+</span>        if (this.inst.isDestroyed) {
+            return false;
+        }
+        index = index || this.resultIndex + 1;
+        if (index &amp;&amp; !(index &gt; this.resultIndex)) {
+            Nodext.logError(&quot;Error add result to tesultGroup, verify param index&quot;);
+        }
+        Nodext.Array.insert(this.results, index, (Array.isArray(results) ? results : [results]));
+    },
+<span id='Nodext-database-ResultGroup-method-insertQuery'>    insertQuery: function (querys, index) {
+</span>        if (!Array.isArray(querys)) {
+            querys = [querys];
+        }
+        index = index || this.resultIndex + 1;
+        if (index &amp;&amp; !(index &gt; this.resultIndex)) {
+            Nodext.logError(&quot;Error add result to tesultGroup, verify param index&quot;);
+        }
+        var results = this.qb.getResults(this.inst, querys);
+        Nodext.Array.insert(this.results, index, (Array.isArray(results) ? results : [results]));
+    },
+<span id='Nodext-database-ResultGroup-method-getResultByIdGroup'>    getResultByIdGroup: function (idGroup) {
+</span>        var x, dataRs;
+        for (x = 0; x &lt; this.results.length; x++) {
+            if (this.results[x].idGroup === idGroup) {
+                dataRs = this.results[x];
+                break;
+            }
+        }
+        return dataRs;
+    },
+<span id='Nodext-database-ResultGroup-method-getAt'>    getAt: function (index) {
+</span>        return this.results[index];
+    },
+<span id='Nodext-database-ResultGroup-method-get'>    get: function (id) {
+</span>        if (typeof id === &quot;number&quot;) {
+            return this.results[id];
+        } else {
+            return this.getResultByIdGroup(idGroup);
+        }
+    },
+<span id='Nodext-database-ResultGroup-method-getDataGroup'>    getDataGroup: function (groupName) {
+</span>        var data = [], x, dataRs;
+        for (x = 0; x &lt; this.results.length; x++) {
+            if (this.results[x].idGroup === groupName) {
+                dataRs = this.results[x].getData();
+                if (dataRs) {
+                    data = data.concat(dataRs);
+                }
+            }
+        }
+        return data;
+    }
+});
+</pre>
+</body>
+</html>

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-database-action-Transaction'>/**
+</span> * 
+ */
+Nodext.define(&quot;Nodext.database.action.Transaction&quot;, {
+    extend: &quot;Nodext.database.action.Base&quot;,
+    alias: &#39;dbaction.transaction&#39;,
+<span id='Nodext-database-action-Transaction-cfg-action'>    action: &quot;transaction&quot;,
+</span>    config: {
+<span id='Nodext-database-action-Transaction-cfg-queryObject'>        queryObject: null,
+</span>        //        requireCompile: fals,
+        //        compileReady: false,
+    },
+<span id='Nodext-database-action-Transaction-method-init'>    init: function () {
+</span>        //        if (this.requireCompile) {
+        //            this.compileQuery();
+        //        } else {
+        //            this.compileReady = true;
+        //        }
+    },
+<span id='Nodext-database-action-Transaction-method-getData'>    //    compileQuery: function () {
+</span>    //        var me = this;
+    //        this.qb.applyBasicCompile(this.queryObject);
+    //        this.query = this.qb._compile_select(this.queryObject.QB);
+    //        this.setQuery(this.query);
+    //        me.compileReady = true;
+    //    },
+    getData: function () {
+        return this.result &amp;&amp; this.result.rows ? this.result.rows : null;
+    },
+<span id='Nodext-database-action-Transaction-method-getRow'>    getRow: function () {
+</span>        return (this.result.rows &amp;&amp; this.result.rows[0]) ? this.result.rows[0] : null;
+    },
+<span id='Nodext-database-action-Transaction-method-getTotal'>    getTotal: function (key) {
+</span>        var total = 0;
+        key = key || &quot;count&quot;;
+        if (this.result &amp;&amp; this.result.rows &amp;&amp; this.result.rows[0] &amp;&amp; this.result.rows[0][key]) {
+            total = parseInt(this.result.rows[0][key]);
+        }
+        key = null;
+        return total;
+    },
+<span id='Nodext-database-action-Transaction-method-numRows'>    numRows: function () {
+</span>        return this.result.rowCount;
+    },
+<span id='Nodext-database-action-Transaction-method-getFields'>    getFields: function () {
+</span>        return this.result.fields;
+    },
+<span id='Nodext-database-action-Transaction-method-destroy'>    destroy: function () {
+</span>        //        Nodext.destroy(this.queryObject);
+        if (this.result) {
+            Nodext.destroyArray(this.result.rows, this.result.fields);
+        }
+        Nodext.destroyClass(this.result);
+        this.callParent();
+        Nodext.destroyClass(this);
+        delete this;
+    }
+
+});</pre>
+</body>
+</html>

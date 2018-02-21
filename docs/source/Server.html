@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-http-Server'>/**
+</span> * 
+ */
+Nodext.define(&quot;Nodext.http.Server&quot;, {
+    extend: &quot;Nodext.http.Base&quot;,
+    mixins: [
+        &quot;Nodext.util.MapClass&quot;,
+        &quot;Nodext.model.Mixin&quot;
+    ],
+    requires: [
+        &quot;Nodext.module.JsonWebToken&quot;,
+        &quot;Nodext.module.EasyXML&quot;,
+        &quot;Nodext.module.FileSystem&quot;,
+        &quot;Nodext.module.Crypto&quot;,
+        &quot;Nodext.http.Domain&quot;,
+        &quot;Nodext.http.controller.Manager&quot;,
+        &quot;Nodext.http.session.*&quot;
+    ],
+<span id='Nodext-http-Server-property-S-configPrefixed'>    $configPrefixed: false,
+</span>
+    config: {
+<span id='Nodext-http-Server-cfg-router'>        /**
+</span>         * @cfg {NodeInstance} router
+         * @private
+         * Una instancia de Express.app.Router la cual direcciona las peticiones 
+         * http asignadas por los controllers
+         */
+        router: null,
+<span id='Nodext-http-Server-cfg-ignoreFilesWith'>        /**
+</span>         * @cfg {Array} [ignoreFilesWith=null]
+         * Permite ignorar la carga de controllerss mediante un prefijo
+         * 
+         * Por ejemplo:
+         * 
+         *  - `escapeMyFile.json`
+         *  - `ignoreOtherFile.json`
+         */
+        ignoreFilesWith: null,
+<span id='Nodext-http-Server-cfg-domain'>        /**
+</span>         * @cfg {Nodext.http.Domain} domain
+         */
+        domain: null,
+<span id='Nodext-http-Server-cfg-controllerMgr'>        /**
+</span>         * @cfg {Nodext.http.controller.Manager} controllerMgr 
+         */
+        controllerMgr: null,
+<span id='Nodext-http-Server-cfg-autoRun'>        /**
+</span>         * @cfg {Boolean} autoRun
+         * Inicio automatico del servidor 
+         */
+        autoRun: true,
+<span id='Nodext-http-Server-cfg-session'>        /**
+</span>         * @cfg {Boolean} session
+         */
+        session: false,
+<span id='Nodext-http-Server-cfg-public'>        /**
+</span>         * @cfg {Object} public
+         * Permite publicar rutas del servidor de modo publico
+         */
+        public: null,
+<span id='Nodext-http-Server-cfg-modelMgr'>        modelMgr: true
+</span>    },
+<span id='Nodext-http-Server-property-checkRunServer'>    /**
+</span>     * @property {Array} checkRunServer
+     * @private
+     * Guarda un listado de librerias o clases las cuales esten pendientes de iniciar, retrasando el inicio del servidor,
+     * hasta que estas se encuentren listas.
+     */
+    checkRunServer: null,
+<span id='Nodext-http-Server-property-bodyParser'>    /**
+</span>     * @property bodyParser
+     * @private
+     */
+    bodyParser: null,
+<span id='Nodext-http-Server-property-methodOverride'>    /**
+</span>     * @property methodOverride
+     * @private
+     */
+    methodOverride: null,
+<span id='Nodext-http-Server-property-clsManager'>    /**
+</span>     * @private
+     * Contiene un listado de los clsManager configurados, en esta lista se encuentra modelMgr(models) y controllerMgr(controllers)
+     */
+    clsManager: null,
+<span id='Nodext-http-Server-method-constructor'>    constructor: function (config) {
+</span>        this.callParent(arguments);
+        this.checkRunServer = [];
+        this.fnListen = this.listenMessage.bind(this);
+        this.mixins.mapclass.constructor.call(this, config);
+        this.mixins.modelmgr.constructor.call(this);
+        process.on(&#39;message&#39;, this.fnListen);
+        this.init();
+    },
+<span id='Nodext-http-Server-method-init'>    /**
+</span>     * @method init
+     * @private
+     */
+    init: function () {
+        this.beforeConfigServer();
+        this.configServer();
+        // this.mixins.mapclass.constructor.call(this);        
+        // this.configModelManager();
+        this.configControllerManager();
+        this.serverReady();
+    },
+<span id='Nodext-http-Server-method-beforeConfigServer'>    /**
+</span>     * @method beforeConfigServer
+     * @template
+     */
+    beforeConfigServer: Nodext.emptyFn,
+<span id='Nodext-http-Server-method-configServer'>    /**
+</span>     * @method configServer
+     * @private
+     */
+    configServer: function () {
+        this.bodyParser = require(&quot;body-parser&quot;),
+            this.methodOverride = require(&quot;method-override&quot;),
+            this.router = this.express.Router();
+
+        this.addMiddleware(this.bodyParser.json({ limit: &#39;50mb&#39; }), {
+            name: &quot;server.jsonParser&quot;,
+            _type: &quot;jsonparser&quot;,
+            _id: Nodext.id(null, &quot;JsonParser-&quot;)
+        });
+        this.addMiddleware(this.bodyParser.urlencoded({ limit: &#39;50mb&#39;, extended: true }), {
+            name: &quot;server.urlEncodedParser&quot;,
+            _type: &quot;urlencodedparser&quot;,
+            _id: Nodext.id(null, &quot;UrlEncodedParser-&quot;)
+        });
+        this.addMiddleware(this.methodOverride(), {
+            name: &quot;server.methodOverride&quot;,
+            _type: &quot;methodoverride&quot;,
+            _id: Nodext.id(null, &quot;MethodOverride-&quot;)
+        });
+
+        this.middlewareHeader();
+
+
+        if (this.session) {
+            var session = Nodext.http.session.Base.create({
+                type: &quot;express&quot;,
+                appNode: this.appNode
+            });
+            session.applyServer(this, this.app);
+            this.session = session;
+        }
+
+        if (this.domain) {
+            this.domain.server = this;
+            if (!(this.domain instanceof Nodext.http.Domain)) {
+                this.domain = Nodext.create(&quot;Nodext.http.Domain&quot;, this.domain);
+            }
+
+            this.addMiddleware(this.domain.middleware());
+        }
+
+        if (this.public) {
+            for (var p in this.public) {
+                this.router.use(p, this.express.static(this.public[p]));
+            }
+        }
+
+
+        this.passport = Nodext.create(&quot;Nodext.http.Passport&quot;, {
+            server: this
+        });
+
+        this.fireEvent(&quot;afterbaseconfig&quot;, this, this.app);
+        this.beforeCfgRouter(this.router);
+        this.fireEvent(&quot;beforeaddrouter&quot;, this, this.app);
+        this.addMiddleware(this.router, {
+            name: &quot;server.router&quot;,
+            _type: &quot;router&quot;,
+            _id: Nodext.id(&quot;Router-&quot;)
+        });
+        this.afterCfgRouter(this.router);
+        this.middlewareError404();
+
+        // this.removeMiddleware(this.getMiddlewareByType(&quot;session&quot;));
+    },
+<span id='Nodext-http-Server-method-beforeCfgRouter'>    /**
+</span>    * @method beforeCfgRouter
+    * @template
+    * Añade una funccion middleware al servidor antes de configurar el router.
+    *
+    * Las funciones de middleware son funciones que tienen acceso al objeto de solicitud (req),
+    * al objeto de respuesta (res) y a la siguiente función de middleware en el ciclo de solicitud/respuestas
+    * de la aplicación. La siguiente función de middleware se denota normalmente con una variable denominada next.
+    * 
+    * Las funciones de middleware pueden realizar las siguientes tareas:
+    * 
+    * - `Ejecutar cualquier código.`
+    * - `Realizar cambios en la solicitud y los objetos de respuesta`
+    * - `Finalizar el ciclo de solicitud/respuestas.`
+    * - `Invocar la siguiente función de middleware en la pila.`
+    * 
+    * Si la función de middleware actual no finaliza el ciclo de solicitud/respuestas, 
+    * debe invocar next() para pasar el control a la siguiente función de middleware. 
+    * De lo contrario, la solicitud quedará colgada.    
+    * @param router 
+    */
+    beforeCfgRouter: Nodext.emptyFn,
+<span id='Nodext-http-Server-method-afterCfgRouter'>    /**
+</span>     * @method afterCfgRouter
+     * @template
+     * Añade una funccion middleware al servidor despues de configurar el router, para mayor referencia vea 
+     * {@link Nodext.http.Server#beforeCfgRouter}
+     * @param router 
+     */
+    afterCfgRouter: Nodext.emptyFn,
+<span id='Nodext-http-Server-method-configControllerManager'>    /**
+</span>     * @method configControllerManager
+     * @private
+     */
+    configControllerManager: function () {
+        this.controllerMgr = this.controllerMgr || {};
+        Nodext.apply(this.controllerMgr, {
+            appNode: this.appNode,
+            server: this
+        });
+        var groupAlias = this.controllerMgr.groupAlias || &quot;controllers&quot;;
+        if (!(this.controllerMgr instanceof Nodext.http.controller.Manager)) {
+            this.controllerMgr = Nodext.create(&quot;Nodext.http.controller.Manager&quot;, this.controllerMgr);
+            if (!this.controllerMgr.autoLoad) {
+                this.controllerMgr.start();
+            }
+        }
+        this.addMapClsManager(groupAlias, this.controllerMgr);
+    },
+<span id='Nodext-http-Server-method-serverReady'>    /**
+</span>     * @method serverReady
+     * Dispara el evento beforerunserver para que las otras clases escuchen y puedan añadir sus dependencias 
+     * antes del inicio del servidor.
+     * @private
+     */
+    serverReady: function () {
+        this.fireEvent(&quot;beforerunserver&quot;, this, this.srv);
+        if (this.autoRun) {
+            this.runServer();
+        }
+    },
+<span id='Nodext-http-Server-method-runServer'>    /**
+</span>     * @method runServer
+     * Valida que el servidor no tenga dependencias pendientes de finalizar y ejecuta el inicio del
+     * servidor.
+     * @private
+     */
+    runServer: function () {
+        var checkInvalid = false;
+        for (var x = 0; x &lt; this.checkRunServer.length; x++) {
+            if (this.checkRunServer[x] !== true) {
+                checkInvalid = true;
+                break;
+            }
+        }
+        if (checkInvalid) {
+            Nodext.logEvent(&quot;Queda pendiente el inicio de :&quot;);
+            console.log(this.checkRunServer);
+            return false;
+        }
+        this.callParent();
+    },
+<span id='Nodext-http-Server-method-addTaskLib'>    /**
+</span>     * @method addTaskLib
+     * Añade una dependencia al servidor.
+     */
+    addTaskLib: function (task) {
+        var index = this.checkRunServer.length;
+        this.checkRunServer.push(task);
+        return index;
+    },
+<span id='Nodext-http-Server-method-completeTask'>    /**
+</span>     * @method completeTask
+     * Marca como completada una dependencia.
+     */
+    completeTask: function (index) {
+        this.checkRunServer[index] = true;
+    },
+
+<span id='Nodext-http-Server-method-listenMessage'>    /**
+</span>     * @method listenMessage
+     * Escucha los eventos resetworker y stopworker que provienen del proceso maestro
+     */
+    listenMessage: function (message) {
+        if (message.from === &quot;Nodext.Cluster&quot;) {
+            if (message.event === &quot;resetworker&quot;) {
+                this.closeWorker.apply(this, message.params);
+            } else if (message.event === &quot;stopworker&quot;) {
+                this.closeWorker.apply(this, message.params);
+            }
+        }
+    },
+<span id='Nodext-http-Server-method-closeWorker'>    /**
+</span>     * @method closeWorker
+     * Cierra el servidor y comunica al proceso maestro que el servidor ya no se encuentra activo.
+     */
+    closeWorker: function () {
+        if (Nodext.AppMetricsDash) {
+            Nodext.AppMetricsDash.monitoring.removeAllListeners();
+        }
+        this.srv.close(function () {
+            Nodext.IPC.setCloseHttp(true);
+            process.send({ ename: &quot;httpserverclose&quot;, params: [Nodext.idCluster, Nodext.idWorker] });
+            Nodext.logEvent(&quot;Server Http Close&quot;);
+        });
+    },
+
+
+});
+
+
+    // onLoadClass: function (init) {
+    //     this.path = init.path;
+    //     var srvCfg = this.getServerConfig();
+    //     //        if (srvCfg.defaults) {
+    //     Nodext.apply(this, srvCfg);
+    //     //        }
+    //     init.on({
+    //         librariesload: &quot;initLibrariesComplete&quot;,
+    //         scope: this
+    //     });
+    // },
+    // getServerConfig: function () {
+    //     try {
+    //         var json = require(Nodext.GlobalCfg.getFileCfgServer(&quot;server.json&quot;));
+    //         var cfg = {};
+    //         if (Nodext.isObject(json.defaults)) {
+    //             Nodext.apply(cfg, json.defaults);
+    //         }
+    //         var id = Nodext.GlobalCfg.idWorker.toString();
+    //         if (Nodext.isObject(json.workers[id])) {
+    //             Nodext.apply(cfg, json.workers[id]);
+    //         }
+    //         return cfg;
+    //     } catch (e) {
+    //         return {};
+    //     }
+    // },
+    // initLibrariesComplete: function () {
+    //     this.initializeServer();
+    // },
+//        var me = this;
+//        setTimeout(function () {
+////            console.log(me.router.stack);
+//            console.log(me.router);
+//            me.router.stack.forEach(function (item, index) {
+////                console.log(&quot;------------&quot;);
+////                console.log(item);
+////                console.log(item.route)
+////                console.log(item.route.path)
+//            });
+//
+//        }, 3000);</pre>
+</body>
+</html>

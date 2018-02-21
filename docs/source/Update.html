@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-database-action-Update'>/**
+</span> * 
+ */
+Nodext.define(&quot;Nodext.database.action.Update&quot;, {
+    extend: &quot;Nodext.database.action.Base&quot;,
+    alias: &#39;dbaction.update&#39;,
+<span id='Nodext-database-action-Update-cfg-action'>    action: &quot;update&quot;,
+</span>    config: {
+<span id='Nodext-database-action-Update-cfg-position'>        position: -1
+</span>    },
+<span id='Nodext-database-action-Update-method-init'>    init: function () {
+</span>        this.result = [];
+    },
+<span id='Nodext-database-action-Update-method-continue'>    continue: function () {
+</span>        if (this.query[this.position + 1]) {
+            return true;
+        } else {
+            return false;
+        }
+    },
+<span id='Nodext-database-action-Update-method-next'>    next: function () {
+</span>        this.position++;
+    },
+<span id='Nodext-database-action-Update-method-getNext'>    getNext: function (rsg) {
+</span>        this.position++;
+        //        if()
+        //        console.log(this.query);
+        //        console.log(this.query[this.position]);
+        //        if (this.mode === &quot;basic&quot;) {
+        return this.query[this.position];
+
+    },
+<span id='Nodext-database-action-Update-method-setResultBatch'>    setResultBatch: function (result) {
+</span>        this.result.push(result);
+    },
+<span id='Nodext-database-action-Update-method-getDataLastInsert'>    getDataLastInsert: function () {
+</span>        if (this.result[this.result.length - 1]) {
+            return this.result[this.result.length - 1].rows || [];
+        } else {
+            return [];
+        }
+    },
+<span id='Nodext-database-action-Update-method-getData'>    getData: function () {
+</span>        if (this.resultBatchData) {
+            return this.resultBatchData;
+        } else {
+            var me = this;
+            me.resultBatchData = [];
+            //            console.log(me.result);
+            for (var x = 0; x &lt; me.result.length; x++) {
+                if (me.result[x].rows &amp;&amp; me.result[x].rows.length &gt; 0) {
+                    me.resultBatchData = me.resultBatchData.concat(me.result[x].rows);
+                }
+            }
+            return me.resultBatchData.length &gt; 0 ? me.resultBatchData : null;
+        }
+    },
+<span id='Nodext-database-action-Update-method-getRow'>    getRow: function () {
+</span>        var row;
+        for (var x = 0; x &lt; this.result.length; x++) {
+            if (this.result[x].rows &amp;&amp; this.result[x].rows[0]) {
+                row = this.result[x].rows[0];
+                break;
+            }
+        }
+        return row;
+    },
+<span id='Nodext-database-action-Update-method-getRowsAffected'>    getRowsAffected: function () {
+</span>        return this.numRows();
+    },
+<span id='Nodext-database-action-Update-method-numRows'>    numRows: function () {
+</span>        if (this.resultBatchRowCount) {
+            return this.resultBatchRowCount;
+        } else {
+            var me = this;
+            this.resultBatchRowCount = 0;
+            for (var x = 0; x &lt; me.result.length; x++) {
+                if (me.result[x].rowCount) {
+                    this.resultBatchRowCount += me.result[x].rowCount;
+                }
+            }
+            return this.resultBatchRowCount;
+        }
+    },
+<span id='Nodext-database-action-Update-method-getFields'>    getFields: function () {
+</span>        return this.result.fields;
+    },
+<span id='Nodext-database-action-Update-method-destroy'>    destroy: function () {
+</span>        for (var x = 0; x &lt; this.result.length; x++) {
+            Nodext.destroyArray(this.result[x].rows, this.result[x].fields);
+            Nodext.destroyObject(this.result[x]);
+        }
+        this.result = null;
+        Nodext.destroyArray(this.query, this.records);
+        Nodext.destroyObject(this.replaceFields);
+        this.qb = this.inst = null;
+        this.callParent();
+        Nodext.destroyClass(this);
+        delete this;
+    }
+});</pre>
+</body>
+</html>

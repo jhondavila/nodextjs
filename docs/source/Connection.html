@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-database-Connection'>/**
+</span> * 
+ */
+Nodext.define(&quot;Nodext.database.Connection&quot;, {
+    extend: &quot;Ext.Base&quot;,
+    alias: &#39;dbconnection.base&#39;,
+<span id='Nodext-database-Connection-property-S-configPrefixed'>    $configPrefixed: false,
+</span><span id='Nodext-database-Connection-property-S-configStrict'>    $configStrict: false,
+</span>    mixins: [
+        &#39;Ext.mixin.Factoryable&#39;
+    ],
+<span id='Nodext-database-Connection-property-factoryConfig'>    factoryConfig: {
+</span>        defaultType: &#39;base&#39;,
+        defaultProperty: &quot;dbdriver&quot;
+    },
+    config: {
+
+<span id='Nodext-database-Connection-cfg-hostname'>        /**
+</span>         * Nombre del host de base de datos
+         */
+        hostname: null,
+<span id='Nodext-database-Connection-cfg-username'>        /**
+</span>         * Usuario de la base de datos
+         */
+        username: null,
+<span id='Nodext-database-Connection-cfg-password'>        /**
+</span>         * Contraseña del usuario
+         */
+        password: null,
+<span id='Nodext-database-Connection-cfg-database'>        /**
+</span>         * Nombre de la base de datos
+         */
+        database: null,
+<span id='Nodext-database-Connection-cfg-port'>        /**
+</span>         * @cfg {Number} port
+         * Puerto de la conexion de base de datos
+         */
+        port: null,
+<span id='Nodext-database-Connection-cfg-debug'>        /**
+</span>         * Habilitar el modo debug query
+         */
+        debug: null,
+<span id='Nodext-database-Connection-cfg-type'>        /**
+</span>         * Tipo de conexion, cliente o pool
+         */
+        type: null,
+<span id='Nodext-database-Connection-cfg-dbdriver'>        /**
+</span>         * Driver de Base de datos a utilizar
+         */
+        dbdriver: &quot;Base&quot;
+    },
+<span id='Nodext-database-Connection-property-driver'>    /**
+</span>     * @property
+     * Libreria a cargar de Node js para soporte de base de datos.
+     */
+    driver: null,
+<span id='Nodext-database-Connection-method-constructor'>    constructor: function (config) {
+</span>        Nodext.apply(this, config || {});
+        this.initConfig(config);
+    },
+<span id='Nodext-database-Connection-method-generateStringConnection'>    /**
+</span>     * @template
+     */
+    generateStringConnection: function () {
+    },
+<span id='Nodext-database-Connection-method-newConnection'>    /**
+</span>     * @template
+     */
+    newConnection: function () {
+    },
+<span id='Nodext-database-Connection-method-cnx'>    /**
+</span>     * @template
+     */
+    cnx: function () {
+    },
+<span id='Nodext-database-Connection-method-destroyCnx'>    /**
+</span>     * @template
+     */
+    destroyCnx: function (cnx) {
+    }
+});</pre>
+</body>
+</html>

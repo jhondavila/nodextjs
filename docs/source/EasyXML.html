@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-module-EasyXML'>/**
+</span> * 
+ */
+Nodext.define(&quot;Nodext.module.EasyXML&quot;, {
+    extend: &quot;Ext.Base&quot;,
+<span id='Nodext-module-EasyXML-property-S-configPrefixed'>    $configPrefixed: false,
+</span>    alternateClassName: [&quot;Nodext.EasyXML&quot;],
+    singleton: true,
+<span id='Nodext-module-EasyXML-property-easyxmlLib'>    /**
+</span>     * @property {NodeModule} easyxmlLib
+     */
+    easyxmlLib: null,
+<span id='Nodext-module-EasyXML-property-easyxml'>    /**
+</span>     * @property {NodeInstance} easyxml
+     */
+    easyxml: null,
+<span id='Nodext-module-EasyXML-method-constructor'>    constructor: function (cfg) {
+</span>        Nodext.apply(this, cfg || {});
+        this.easyxmlLib = require(&#39;easyxml&#39;);
+        this.easyxml = new this.easyxmlLib({
+            singularizeChildren: true,
+            allowAttributes: true,
+            rootElement: &#39;response&#39;,
+            dateFormat: &#39;ISO&#39;,
+            indent: 2,
+            manifest: true
+        });
+        this.initConfig();
+    },
+<span id='Nodext-module-EasyXML-method-render'>    render: function (message) {
+</span>        return this.easyxml.render(message);
+    }
+});</pre>
+</body>
+</html>

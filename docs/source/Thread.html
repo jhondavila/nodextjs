@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-app-master-Thread'>/**
+</span> * 
+ */
+Nodext.define(&quot;Nodext.app.master.Thread&quot;, {
+<span id='Nodext-app-master-Thread-property-S-configPrefixed'>    $configPrefixed: false,
+</span><span id='Nodext-app-master-Thread-property-S-configStrict'>    $configStrict: false,
+</span>    mixins: {
+        observable: &#39;Ext.util.Observable&#39;
+    },
+    requires: [
+        &quot;Nodext.module.FileSystem&quot;
+    ],
+    config: {
+<span id='Nodext-app-master-Thread-cfg-id'>        /**
+</span>         * @cfg {String|Number} id 
+         * Id del Thread
+         */
+        id: null,
+<span id='Nodext-app-master-Thread-cfg-cluster'>        /**
+</span>         * @cfg {Nodext.app.master.Cluster} cluster
+         * Cluster del Thread
+         */
+        cluster: null,
+<span id='Nodext-app-master-Thread-cfg-env'>        /**
+</span>         * @cfg {Object} env
+         * Información sobre el worker actual vinculado
+         */
+        env: null
+    },
+<span id='Nodext-app-master-Thread-property-status'>    /**
+</span>     * @property {String} status
+     * Indica el estado actual del thread
+     */
+    status: null,
+<span id='Nodext-app-master-Thread-property-worker'>    /**
+</span>     * @property {NodeInstance} worker
+     * Almacena el worker generado
+     * @private
+     */
+    worker: null,
+<span id='Nodext-app-master-Thread-method-constructor'>    constructor: function (cfg) {
+</span>        Nodext.apply(this, cfg);
+        this.id = this.id || Nodext.id(null, &quot;Thread-&quot;);
+        this.initConfig();
+        this.mixins.observable.constructor.call(this, cfg);
+    },
+<span id='Nodext-app-master-Thread-method-buildWorker'>    /**
+</span>     * @method buildWorker
+     * Genera un worker y lo vincula a esta instancia
+     */
+    buildWorker: function () {
+<span id='Nodext-app-master-Thread-event-buildworker'>        /**
+</span>         * @event buildworker
+         * @param {Nodext.app.master.Thread} thread
+         */
+        this.setStatus(&quot;buildworker&quot;);
+        this.worker = this.worker || Nodext.cluster.fork();
+        this.worker.Cls = this;
+        this.setWorkerIdentified();
+    },
+<span id='Nodext-app-master-Thread-method-setWorkerIdentified'>    setWorkerIdentified: function () {
+</span>        this.worker.idCluster = this.cluster.id;
+        this.worker.idThread = this.id;
+    },
+<span id='Nodext-app-master-Thread-method-workerStart'>    /**
+</span>     * @method workerStart
+     * Envia un mensaje de Inicio al worker vinculado
+     */
+    workerStart: function () {
+<span id='Nodext-app-master-Thread-event-workerstart'>        /**
+</span>         * @event workerstart
+         * @param {Nodext.app.master.Thread} thread
+         */
+        this.setStatus(&quot;workerstart&quot;);
+        this.send({
+            to: &#39;Nodext&#39;,
+            from: &#39;Nodext.app.master.Thread&#39;,
+            event: &quot;workerstart&quot;,
+            params: [this.id, this.internalId, this.cluster.getId()]
+        });
+    },
+<span id='Nodext-app-master-Thread-method-send'>    /**
+</span>     * @method send
+     * Envia mensajes al worker vinculado
+     * @param {Object} data
+     */
+    send: function (data) {
+        this.worker.send(data);
+    },
+<span id='Nodext-app-master-Thread-method-getPid'>    /**
+</span>     * @method getPid
+     * Retorna el Pid del worker vinculado
+     * @return {Number}
+     */
+    getPid: function () {
+        if (this.worker) {
+            return this.worker.process.pid;
+        } else {
+            return null;
+        }
+    },
+<span id='Nodext-app-master-Thread-method-encodeThread'>    /**
+</span>     * @method encodeThread
+     * Devuelve un JSON con los datos actuales del Thread 
+     * @return {Object}
+     */
+    encodeThread: function () {
+        var cfg = {
+            id: this.cluster.getId() + &quot;#&quot; + this.id,
+            text: this.text || Nodext.String.format(&quot;Thread {0} ({1})&quot;, this.id, this.getPid()),
+            status: this.status,
+            type: &quot;thread&quot;,
+            run: this.getPid() ? true : false,
+            id_thread: this.id,
+            id_cluster: this.cluster.getId(),
+            leaf: true
+        };
+        Nodext.apply(cfg, this.env || {});
+        cfg[&quot;max.heap.size&quot;] = Nodext.FS.getSizeMB(cfg[&quot;max.heap.size&quot;]);
+        cfg[&quot;max.old.space.size&quot;] = Nodext.FS.getSizeMB(cfg[&quot;max.old.space.size&quot;]);
+        cfg[&quot;max.semi.space.size&quot;] = Nodext.FS.getSizeMB(cfg[&quot;max.semi.space.size&quot;]);
+        cfg[&quot;heap.size.limit&quot;] = Nodext.FS.getSizeMB(cfg[&quot;heap.size.limit&quot;]);
+        return cfg;
+    },
+<span id='Nodext-app-master-Thread-method-setStatus'>    /**
+</span>     * @method setStatus
+     * Indica el estado actual del Thread
+     * @param {String} event
+     * @param {Object} data
+     */
+    setStatus: function (event, data) {
+        this.status = event;
+        this.fireEvent(event, this, data);
+        var obj = this.getThreadIdentified();
+        Nodext.apply(obj, data || {});
+        obj.status = event;
+<span id='Nodext-app-master-Thread-event-changestatus'>        /**
+</span>         * @event changestatus
+         * @param {Nodext.app.master.Thread} thread
+         * @param {Object} obj
+         */
+        this.fireEvent(&quot;changestatus&quot;, this, obj);
+    },
+<span id='Nodext-app-master-Thread-method-getThreadIdentified'>    /**
+</span>     * @method getThreadIdentified
+     * Returna los identificadores del thread actual
+     */
+    getThreadIdentified: function () {
+        return {
+            id: this.id,
+            clusterId: this.cluster.getId(),
+            type: &quot;thread&quot;,
+            equip: this.cluster.equip
+        };
+    },
+    // emitAppServer: function (event, data) {
+
+    //     // if (!Nodext.SocketIOMgr) {
+    //     //     Nodext.logError(&quot;No existe Nodext.SocketIOMgr&quot;);
+    //     //     return false;
+    //     // }
+    //     // Nodext.SocketIOMgr.emitSpace(&quot;Server&quot;, event, data);
+    // },
+
+
+<span id='Nodext-app-master-Thread-method-disconnect'>    /**
+</span>     * @method disconnect
+     * Desconecta el worker vinculado
+     */
+    disconnect: function () {
+        this.worker.disconnect();
+    },
+<span id='Nodext-app-master-Thread-method-kill'>    /**
+</span>     * @method kill
+     * Mata el worker vinculado
+     */
+    kill: function () {
+        this.worker.kill();
+    },
+<span id='Nodext-app-master-Thread-method-cleanThread'>    /**
+</span>     * @method cleanThread
+     * Limpia el Thread actual del worker vinculado
+     */
+    cleanThread: function () {
+        this.worker = this.worker.idCluster = this.worker.idThread = this.worker.Cls = null;
+        this.env = null;
+        this.text = Nodext.String.format(&quot;Thread {0} ({1})&quot;, this.id, this.getPid());
+        this.run = false;
+        this.status = &quot;off&quot;;
+<span id='Nodext-app-master-Thread-event-off'>        /**
+</span>         * @event off
+         * @param {Nodext.app.master.Thread} thread
+         * @param {Object} data
+         */
+        this.setStatus(&quot;off&quot;, {
+            data: this.encodeThread()
+        });
+    }
+});</pre>
+</body>
+</html>

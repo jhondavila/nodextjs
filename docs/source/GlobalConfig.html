@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-app-GlobalConfig'>/**
+</span> * Almacena los path y configuraciones de {@link Nodext.app.Node}
+ * Mediante esta clase podras acceder a configuraciones :
+ * 
+ * - `Globales`
+ * - `Cluster`
+ * - `Worker`
+ */
+Nodext.define(&quot;Nodext.app.GlobalConfig&quot;, {
+    extend: &quot;Ext.Base&quot;,
+<span id='Nodext-app-GlobalConfig-property-S-configPrefixed'>    $configPrefixed: false,
+</span><span id='Nodext-app-GlobalConfig-property-S-configStrict'>    $configStrict: false,
+</span>    alternateClassName: [&quot;Nodext.GlobalCfg&quot;],
+    config: {
+<span id='Nodext-app-GlobalConfig-cfg-appNode'>        /**
+</span>         * @cfg {Nodext.app.Node} appNode
+         */
+        appNode: null,
+<span id='Nodext-app-GlobalConfig-cfg-tokenKey'>        /**
+</span>         * @cfg {String} [tokenKey=null]
+         * cadena Token , si no es suministrada es generada automaticamente
+         */
+        tokenKey: null,
+<span id='Nodext-app-GlobalConfig-cfg-tokenKeyLength'>        /**
+</span>         * @cfg {Number} [tokenKeyLength=30]
+         * Longitud de Token generada
+         */
+        tokenKeyLength: 30,
+<span id='Nodext-app-GlobalConfig-cfg-useSocketIO'>        /**
+</span>         * @cfg {Boolean} [useSocketIO=false]
+         */
+        useSocketIO: false,
+<span id='Nodext-app-GlobalConfig-cfg-useServerHttp'>        /**
+</span>         * @cfg {Boolean} [useServerHttp=false]
+         */
+        useServerHttp: false,
+<span id='Nodext-app-GlobalConfig-cfg-closeHttp'>        /**
+</span>         * @cfg {Boolean} [closeHttp=false]
+         */
+        closeHttp: false,
+<span id='Nodext-app-GlobalConfig-cfg-closeSocketIO'>        /**
+</span>         * @cfg {Boolean} [closeSocketIO=false]
+         */
+        closeSocketIO: false,
+<span id='Nodext-app-GlobalConfig-cfg-socketIOInit'>        /**
+</span>         * @cfg {Boolean} [socketIOInit=false]
+         */
+        socketIOInit: false,
+<span id='Nodext-app-GlobalConfig-cfg-httpInit'>        /**
+</span>         * @cfg {Boolean} [httpInit=false]
+         */
+        httpInit: false,
+<span id='Nodext-app-GlobalConfig-cfg-pathWorkerCfg'>        /**
+</span>         * @cfg {String} [pathWorkerCfg=&#39;config/worker&#39;]
+         * Path de las configuraciones del worker
+         */
+        pathWorkerCfg: &quot;config/worker&quot;,
+<span id='Nodext-app-GlobalConfig-cfg-pathClusterCfg'>        /**
+</span>        * @cfg {String} [pathClusterCfg=&#39;config/cluster&#39;]
+        * Path de las configuraciones del Cluster
+        */
+        pathClusterCfg: &quot;config&quot;,
+<span id='Nodext-app-GlobalConfig-cfg-pathGlobalCfg'>        /**
+</span>        * @cfg {String} [pathGlobalCfg=&#39;config&#39;]
+        * Path de las configuraciones Globales
+        */
+        pathGlobalCfg: &quot;config&quot;,
+<span id='Nodext-app-GlobalConfig-cfg-fileNameGlobal'>        /**
+</span>        * @cfg {String} [fileNameGlobal=&#39;global.json&#39;]
+        * Nombre del archivo de las configuraciones globales
+        */
+        fileNameGlobal: &quot;global.json&quot;
+    },
+
+<span id='Nodext-app-GlobalConfig-method-constructor'>    constructor: function (cfg) {
+</span>        Nodext.apply(this, cfg || {});
+        this.initConfig(cfg);
+        var globalCfg = this.getGlobalConfig(this.fileNameGlobal);
+        Nodext.apply(this, globalCfg);
+        this.generateTokenString();
+        this.callParent();
+    },
+<span id='Nodext-app-GlobalConfig-method-getFileCfg'>    /**
+</span>     * @method
+     * Devuelve un archivo de configuracion detectando si la aplicacion es el proceso Maestro o es un worker
+     * @param {String} file
+     * @return {Object}
+     */
+    getFileCfg: function (file) {
+        if (this.appNode.isMaster()) {
+            return this.getFileCfgCluster(file);
+        } else {
+            return this.getFileCfgWorker(file)
+        }
+    },
+<span id='Nodext-app-GlobalConfig-method-getFileCfgCluster'>    /**
+</span>     * @method 
+     * Devuelve un archivo Json de la ruta de configuraciones del Cluster
+     * @param {String} file
+     * @return {Object}
+     */
+    getFileCfgCluster: function (file) {
+        var path = this.appNode.path + &quot;/&quot; + this.pathClusterCfg + &quot;/&quot; + file;
+        try {
+            return require(path);
+        } catch (e) {
+            Nodext.logError(&quot;No found file&quot; + path);
+            return {};
+        }
+    },
+<span id='Nodext-app-GlobalConfig-method-getFileCfgWorker'>    /**
+</span>    * @method 
+    * Devuelve un archivo Json de la ruta de configuraciones del Worker
+    * @param {String} file
+    * @return {Object}
+    */
+    getFileCfgWorker: function (file) {
+        var path = this.appNode.path + &quot;/&quot; + this.pathWorkerCfg + &quot;/&quot; + file;
+        try {
+            return require(path);
+        } catch (e) {
+            Nodext.logError(&quot;No found file&quot; + path);
+            return {};
+        }
+    },
+<span id='Nodext-app-GlobalConfig-method-getGlobalConfig'>    /**
+</span>    * @method 
+    * Devuelve un archivo Json de la ruta de configuraciones Globales
+    * @param {String} file
+    * @return {Object}
+    */
+    getGlobalConfig: function (file) {
+        var path = this.appNode.path + &quot;/&quot; + this.pathGlobalCfg + &quot;/&quot; + file;
+        try {
+            return require(path);
+        } catch (e) {
+            Nodext.logError(&quot;No found file&quot; + path);
+            return {};
+        }
+    },
+<span id='Nodext-app-GlobalConfig-method-generateTokenString'>    /**
+</span>    * @method 
+    * Genera una token aleatoria en caso que la configuracion {@link Nodext.app.GlobalConfig#tokenKey} = null
+    */
+    generateTokenString: function () {
+        this.tokenKey = this.tokenKey || this.randString(this.tokenKeyLength);
+    },
+<span id='Nodext-app-GlobalConfig-method-randString'>    /**
+</span>     * @method
+     * Genera una cadena aleatoria en base a la logintud del paremetro
+     * @param {Number} length
+     */
+    randString: function (x) {
+        var s = &quot;&quot;;
+        while (s.length &lt; x &amp;&amp; x &gt; 0) {
+            var r = Math.random();
+            s += (r &lt; 0.1 ? Math.floor(r * 100) : String.fromCharCode(Math.floor(r * 26) + (r &gt; 0.5 ? 97 : 65)));
+        }
+        return s;
+    }
+});</pre>
+</body>
+</html>

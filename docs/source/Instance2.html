@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-socket-IO-Instance'>/**
+</span> * 
+ */
+Nodext.define(&quot;Nodext.socket.IO.Instance&quot;, {
+    extend: &quot;Nodext.BaseInstance&quot;,
+<span id='Nodext-socket-IO-Instance-property-socket'>    socket: null,
+</span><span id='Nodext-socket-IO-Instance-property-socketErrorMsg'>    socketErrorMsg: null,
+</span><span id='Nodext-socket-IO-Instance-property-DBErrorDestroy'>    DBErrorDestroy: true,
+</span><span id='Nodext-socket-IO-Instance-property-autoClear'>    autoClear: true,
+</span><span id='Nodext-socket-IO-Instance-property-nameSpace'>    // DBEndDestroy: true,
+</span>    nameSpace: this,
+<span id='Nodext-socket-IO-Instance-property-nsp'>    nsp: this,
+</span><span id='Nodext-socket-IO-Instance-method-emit'>    emit: function () {
+</span>        this.socket.emit.apply(this.socket, arguments);
+    },
+<span id='Nodext-socket-IO-Instance-method-constructor'>    constructor: function (config) {
+</span>        this.id = Nodext.id();
+        Nodext.apply(this, config);
+        if (this.autoInit) {
+            this.initBuild();
+        }
+    },
+<span id='Nodext-socket-IO-Instance-method-getParams'>    getParams: function () {
+</span>        if (this.destroyed) {
+            return;
+        }
+        var obj = {
+
+        };
+        if (this.socket.handshake.query) {
+            Nodext.apply(obj, this.socket.handshake.query);
+        }
+        return obj;
+    },
+<span id='Nodext-socket-IO-Instance-method-getParam'>    getParam: function (item) {
+</span>        if (this.destroyed) {
+            return;
+        }
+        var handshake = this.socket.handshake;
+        if (handshake.query[item]) {
+            return handshake.query[item];
+        }
+        return;
+    },
+<span id='Nodext-socket-IO-Instance-method-getIp'>    getIp: function (socket) {
+</span>        if (socket.request.connection.remoteAddress) {
+            return socket.request.connection.remoteAddress;
+        }
+        if (socket.handshake.address) {
+            return socket.handshake.headers.host;
+        }
+        if (socket.request.connection._peername.address) {
+            return socket.request.connection._peername.address;
+        }
+        return false;
+    },
+<span id='Nodext-socket-IO-Instance-method-getHostName'>    getHostName: function (socket) {
+</span>        if (socket.handshake.headers.host) {
+            return socket.handshake.headers.host.split(&quot;:&quot;).shift();
+        }
+        return false;
+    },
+<span id='Nodext-socket-IO-Instance-method-getIpFamily'>    getIpFamily: function (socket) {
+</span>        if (socket.request.connection._peername.family) {
+            return socket.request.connection._peername.family;
+        }
+        return false;
+    },
+<span id='Nodext-socket-IO-Instance-method-getPeerPort'>    getPeerPort: function (socket) {
+</span>        if (socket.request.connection._peername.port) {
+            return socket.request.connection._peername.port;
+        }
+        return false;
+    },
+<span id='Nodext-socket-IO-Instance-method-broadcast'>    broadcast: function (socket, name, data) {
+</span>        socket.broadcast.emit(name, data);
+    },
+<span id='Nodext-socket-IO-Instance-method-sendError'>    sendError: function (err, code, log) {
+</span>        if (log) {
+            Nodext.logError(err);
+        }
+        if (this.DBErrorDestroy) {
+            this.destroy();
+        }
+    },
+<span id='Nodext-socket-IO-Instance-method-destroy'>    destroy: function () {
+</span>        this.socket = this.nsp = this.nameSpace = null;
+        this.callParent();
+        delete this;
+    },
+<span id='Nodext-socket-IO-Instance-method-exit'>    exit: function () {
+</span>        this.destroy();
+    },
+<span id='Nodext-socket-IO-Instance-method-clear'>    clear: function () {
+</span>        this.destroy();
+    },
+<span id='Nodext-socket-IO-Instance-method-getId'>    getId: function () {
+</span>        if (this.destroyed) {
+            return false;
+        }
+        return this.socket.id;
+    },
+<span id='Nodext-socket-IO-Instance-method-getCnxId'>    getCnxId: function () {
+</span>        if (this.destroyed) {
+            return false;
+        }
+        return this.socket.conn.id;
+    }
+});</pre>
+</body>
+</html>

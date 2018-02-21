@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext'>/**
+</span> * @class Nodext
+ */
+
+(function () {
+    var dir = __dirname;
+    Nodext.Loader.setConfig({
+        enabled: true,
+        paths: {
+            &#39;Nodext&#39;: dir,
+        }
+    });
+    Nodext.apply(Nodext, {
+<span id='Nodext-method-loadFilesByPath'>        /**
+</span>        * Devuelve una lista de nombre de clases encontrados en una determinada ruta.
+        */
+        loadFilesByPath: function (pathFolder, expr, opts) {
+            var Manager = Ext.ClassManager;
+            var paths = Manager.paths;
+
+            var pathFolder;
+
+            if (expr) {
+                var indexExp = expr.search(/\.(?=[A-z0-9]*[\*]+[A-z0-9\W]*)/g);
+                var subExp = expr.substring(0, indexExp);
+                pathFolder = this.getPathFolder(Manager, subExp);
+            }
+
+            var files = this.getFiles(pathFolder, null, opts);
+            var regexp, p, f, x, file, list = [];
+
+            for (p in paths) {
+                regexp = new RegExp(this.escapeUrl(paths[p]));
+                for (x = 0; x &lt; files.length; x++) {
+                    f = files[x];
+                    if (regexp.test(f)) {
+                        f = f.replace(regexp, p);
+                        f = f.replace(/\.js/g, &quot;&quot;);
+                        f = f.replace(/(\\|\/)/g, &quot;.&quot;);
+                        if (!Manager.nameToAliases[f]) {
+                            Manager.nameToAliases[f] = [];
+                        }
+                        list.push(f);
+                    }
+                }
+            }
+            files = regexp = p = f = x = file = null;
+            return list;
+        },
+<span id='Nodext-method-escapeUrl'>        /**
+</span>         * Escapa caracteres especiales dentro de una cadena
+         */
+        escapeUrl: function (string) {
+            return string.replace(/[-\/\\^$*+?.()|[\]{}]/g, &#39;\\$&amp;&#39;);
+        },
+<span id='Nodext-property-RegExPattern'>        /**
+</span>         * Permite evitar la lectura de ciertos archivos en una carpeta,
+         * esta regExp es utilizado por {@link #loadFilesByPath}.
+         */
+        RegExPattern: /(ignore)/gi,
+<span id='Nodext-method-getFiles'>        /**
+</span>         * Obtiene una lista de rutas con archivos en una determinada carpeta.
+         */
+        getFiles: function (dir, files_, opts) {
+            this.fs = this.fs || require(&quot;fs&quot;);
+            opts = opts || {};
+            files_ = files_ || [];
+            var me = this, files,
+                RegExPattern = opts.RegExPattern || this.RegExPattern;
+            try {
+                files = this.fs.readdirSync(dir);
+            } catch (error) {
+                Nodext.logError(&quot;No found path : &quot; + dir);
+                files = [];
+            }
+
+            for (var i in files) {
+                var name = dir + &#39;/&#39; + files[i];
+                if (!files[i].match(RegExPattern)) {
+                    if (this.fs.statSync(name).isDirectory()) {
+                        me.getFiles(name, files_, opts);
+                    } else {
+                        if (files[i].match(/(js)$/ig)) {
+                            files_.push(name);
+                        }
+                    }
+                } else {
+                    if (this.fs.statSync(name).isDirectory()) {
+                        Nodext.logEvent(&quot;Ignore loading automatic in directory ==&gt;&quot; + name);
+                    } else {
+                        Nodext.logEvent(&quot;Ignore loading automatic this file ==&gt;&quot; + name);
+                    }
+                }
+            }
+            return files_;
+        },
+<span id='Nodext-method-getPathFolder'>        /**
+</span>         * Obtiene la ruta de archivo de una Clase
+         */
+        getPathFolder: function (Manager, className) {
+            var me = Manager,
+                paths = me.paths,
+                ret = &#39;&#39;,
+                prefix;
+
+            if (className in paths) {
+                ret = paths[className];
+            } else {
+                prefix = me.getPrefix(className);
+                if (prefix) {
+                    className = className.substring(prefix.length + 1);
+                    ret = paths[prefix];
+                    if (ret) {
+                        ret += &#39;/&#39;;
+                    }
+                }
+
+                ret += className.replace(me.dotRe, &#39;/&#39;);
+            }
+
+            return ret;
+        }
+    });
+}())
+</pre>
+</body>
+</html>

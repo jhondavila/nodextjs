@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-util-HookClass'>/**
+</span> * 
+ */
+Nodext.define(&quot;Nodext.util.HookClass&quot;, {
+    extend: &quot;Ext.Mixin&quot;,
+    config: {
+<span id='Nodext-util-HookClass-cfg-load'>        load: null
+</span>    },
+<span id='Nodext-util-HookClass-property-mixinConfig'>    mixinConfig: {
+</span>        id: &#39;hookclass&#39;
+    },
+<span id='Nodext-util-HookClass-method-hookLoad'>    /**
+</span>     * @private
+     * @method
+     * Vincula clases al controlador mediante un alias, de manera que se vuelve mas practico usar metodos de otras clases.
+     */
+    hookLoad: function () {
+        var load = this.load || {};
+        var group, hookAlias, alias, g, ha, cls, clsAlias;
+        for (g in load) {
+            group = load[g];
+            for (ha in group) {
+                hookAlias = group[ha];
+                clsAlias = Nodext.String.format(&quot;{0}.{1}&quot;, g, hookAlias);
+                cls = Nodext.ClassManager.getNameByAlias(clsAlias);
+                if (cls) {
+                    var clsInst = this.getClassOfMgr(g, cls);
+                    if (clsInst) {
+                        if (!this[ha]) {
+                            this[ha] = clsInst;
+                        } else {
+                            Nodext.logError(Nodext.String.format(&quot;You can not use the alias {0} because an variable or method already exists with this name&quot;, ha));
+                        }
+                    }
+                } else {
+                    Nodext.logError(&quot;No found class with alias :&quot; + clsAlias)
+                }
+            }
+        }
+    },
+<span id='Nodext-util-HookClass-property-getClassOfMgr'>    getClassOfMgr: Ext.emptyFn
+</span>});</pre>
+</body>
+</html>

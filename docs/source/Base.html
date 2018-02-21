@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js"><span id='Nodext-app-master-Base'>/**
+</span> * 
+ */
+Nodext.define(&quot;Nodext.app.master.Base&quot;, {
+    extend: &quot;Nodext.BaseConfig&quot;,
+    requires: [&quot;Nodext.app.master.Redis&quot;, &quot;Nodext.app.master.ClusterManager&quot;],
+<span id='Nodext-app-master-Base-property-S-configPrefixed'>    $configPrefixed: false,
+</span><span id='Nodext-app-master-Base-property-S-configStrict'>    $configStrict: false,
+</span>    mixins: {
+        observable: &#39;Ext.util.Observable&#39;
+    },
+    config: {
+<span id='Nodext-app-master-Base-cfg-appNode'>        /**
+</span>        * @cfg {Nodext.app.Node} appNode
+        * @requires
+        */
+        appNode: null,
+<span id='Nodext-app-master-Base-cfg-fileCfg'>        /**
+</span>        * @cfg {String} fileCfg
+        */
+        fileCfg: &quot;cluster.json&quot;,
+<span id='Nodext-app-master-Base-cfg-totalServer'>        /**
+</span>         * @cfg {Number} totalServer
+         * Total de workers activos.No debe ser mayor a {@link #totalThread}
+         */
+        totalServer: 1,
+<span id='Nodext-app-master-Base-cfg-totalThread'>        /**
+</span>         * @cfg {Number} totalThread
+         * total de workers maximos permitidos.
+         */
+        totalThread: 1,
+<span id='Nodext-app-master-Base-cfg-id'>        /**
+</span>         * @cfg {String} id
+         * id del Cluster
+         */
+        id: null,
+<span id='Nodext-app-master-Base-cfg-name'>        /**
+</span>         * @cfg {String} name
+         * Nombre del Cluster
+         */
+        name: null,
+<span id='Nodext-app-master-Base-cfg-redis'>        /**
+</span>         * @cfg {Nodext.app.master.Redis|Object} redis
+         */
+        redis: null
+    },
+<span id='Nodext-app-master-Base-property-numCPUs'>    /**
+</span>     * @property {Number} numCPUs
+     * Numero de nucleos del procesador 
+     */
+    numCPUs: null,
+<span id='Nodext-app-master-Base-property-actionWorkers'>    /**
+</span>     * @property {Object} actionWorkers
+     * @private
+     * Almacena la lista de acciones pendientes a ejecutar para cada worker
+     */
+    actionWorkers: null,
+<span id='Nodext-app-master-Base-property-workers'>    /**
+</span>     * @property {Ext.util.Collection} workers
+     * Almacena los workers generados por la instancia maestra
+     */
+    workers: null,
+<span id='Nodext-app-master-Base-property-os'>    /**
+</span>     * @property {NodeModule} os
+     * Carga la Libreria os de NodeJS, de esta manera obtenemos informacion del SO.
+     */
+    os: null,
+<span id='Nodext-app-master-Base-method-generateId'>    generateId: function () {
+</span>        this.id = Nodext.id(null, &quot;Cluster-&quot;);
+    },
+<span id='Nodext-app-master-Base-method-constructor'>    constructor: function (config) {
+</span>        this.callParent(arguments);
+        
+        this.mixins.observable.constructor.call(this, config);
+        this.workers = Nodext.create(&quot;Ext.util.Collection&quot;, {});
+        Nodext.app.ClusterMgr.register(this);
+
+        this.actionWorkers = {};
+        this.os = require(&#39;os&#39;);
+
+        // if (this.monitoring) {
+        //     Nodext.require(&quot;Nodext.system.cluster.manager.SocketIO&quot;);
+        //     Nodext.SocketIOMgr.on({
+        //         afterload: &#39;addListenerMonitor&#39;,
+        //         scope: this,
+        //         single: true
+        //     });
+        // }
+        // if (this.clusterServer) {
+        this.addClusterHook();
+
+        this.initRedis();
+        // console.log(this)
+        this.detectThread();
+        // }
+    },
+<span id='Nodext-app-master-Base-method-setRedis'>    setRedis: function (redis) {
+</span>        if (!redis) {
+            return this.redis;
+        }
+        var clsRedis = Nodext.app.master.Redis;
+        if (this.redis instanceof clsRedis &amp;&amp; redis !== this.redis) {
+            this.redis.unlistenCluster(this);
+        }
+        if (!(this.redis instanceof clsRedis)) {
+            this.redis = Nodext.create(&quot;Nodext.app.master.Redis&quot;, redis);
+        } else {
+            this.redis = redis;
+        }
+    },
+<span id='Nodext-app-master-Base-method-initRedis'>    /**
+</span>     * @method initRedis
+     */
+    initRedis: function () {
+        if (!(this.redis instanceof Nodext.app.master.Redis)) {
+            this.redis = Nodext.create(&quot;Nodext.app.master.Redis&quot;, this.redis);
+        }
+        this.redis.listenCluster(this);
+    },
+<span id='Nodext-app-master-Base-method-detectThread'>    /**
+</span>     * @method detectThread
+     * Detecta el numero maximo de Thread/Workers que se pueden generar en base al numero de nucleos
+     * del procesador del equipo.
+     * @private 
+     */
+    detectThread: function () {
+        this.numCPUs = this.os.cpus().length;
+        this.totalThread = this.totalThread || &#39;MAX&#39;;
+
+        if (Nodext.isString(this.totalThread) &amp;&amp; this.totalThread === &#39;MAX&#39;) {
+            this.totalThread = this.numCPUs;
+        } else if (Nodext.isNumeric(this.totalThread)) {
+            if (this.totalThread &gt; this.numCPUs || this.totalThread &lt; 1) {
+                this.totalThread = this.numCPUs;
+            } else {
+                this.totalThread = parseInt(this.totalThread);
+            }
+        }
+    },
+<span id='Nodext-app-master-Base-method-onClusterMessage'>    /**
+</span>     * @method onClusterMessage
+     * @private
+     * Genera un relayEvent al process para el evento &quot;message&quot;&quot;
+     */
+    onClusterMessage: function (worker, msg) {
+        if (this.id !== worker.idCluster) {
+            return;
+        }
+        if (msg.ename) {
+            this.fireEvent.apply(this, [msg.ename, this].concat(msg.params));
+        }
+        this.fireEvent(&quot;message&quot;, this, worker, worker.process.pid, msg);
+    },
+<span id='Nodext-app-master-Base-method-onClusterOnline'>    /**
+</span>     * @method onClusterOnline
+     * @private
+     * Genera un relayEvent al process para el evento &quot;online&quot;
+     */
+    onClusterOnline: function (worker) {
+        if (this.id !== worker.idCluster) {
+            return;
+        }
+        this.fireEvent(&quot;online&quot;, this, worker, worker.process.pid);
+    },
+<span id='Nodext-app-master-Base-method-onClusterListening'>    /**
+</span>     * @method onClusterListening
+     * @private
+     * Genera un relayEvent al process para el evento &quot;listening&quot;
+     */
+    onClusterListening: function (worker, address) {
+        if (this.id !== worker.idCluster) {
+            return;
+        }
+        // console.log(address);
+        this.fireEvent(&quot;listening&quot;, this, worker, worker.process.pid, address);
+    },
+<span id='Nodext-app-master-Base-method-onClusterExit'>    /**
+</span>     * @method onClusterExit
+     * @private
+     * Genera un relayEvent al process para el evento &quot;exit&quot;
+     */
+    onClusterExit: function (worker, code, signal) {
+        var cluster = worker.Cls.cluster;
+        var thread = worker.Cls;
+        var pid = worker.process.pid;
+        if (worker.suicide === true || (worker.Cls &amp;&amp; worker.Cls.typeExit)) {
+            Nodext.logEvent(&quot;worker &quot; + worker.process.pid + &quot; it was just suicide\&#39; – no need to worry&quot;);
+            this.fireEvent(&quot;exitbysuicide&quot;, this, cluster, thread, pid, signal);
+        } else if (signal) {
+            Nodext.logEvent(&quot;worker &quot; + worker.process.pid + &quot; exit signal.&quot;);
+            this.fireEvent(&quot;exitbysignal&quot;, this, cluster, thread, pid, signal);
+        } else if (code !== 0) {
+            Nodext.logEvent(&quot;worker &quot; + worker.process.pid + &quot; error code &quot; + code);
+            this.fireEvent(&quot;exitbyerror&quot;, this, cluster, thread, pid, code);
+        } else {
+            Nodext.logEvent(&quot;exit not identified&quot;);
+        }
+        cluster = thread = pid = null;
+    },
+<span id='Nodext-app-master-Base-method-onClusterDisconnect'>    /**
+</span>     * @method onClusterDisconnect
+     * @private
+     * Genera un relayEvent al process para el evento &quot;disconnect&quot;
+     */
+    onClusterDisconnect: function (worker) {
+        if (this.id !== worker.idCluster) {
+            return;
+        }
+        this.fireEvent(&quot;disconnect&quot;, this, worker, worker.process.pid);
+    },
+<span id='Nodext-app-master-Base-method-onClusterFork'>    /**
+</span>     * @method onClusterFork
+     * @private
+     * Genera un relayEvent al process para el evento &quot;fork&quot;
+     */
+    onClusterFork: function (worker) {
+        if (this.id !== worker.idCluster) {
+            return;
+        }
+        Nodext.logWorkerFork(&quot;worker &quot; + worker.process.pid + &quot; fork&quot;);
+        this.fireEvent(&quot;fork&quot;, this, worker, worker.process.pid);
+    },
+<span id='Nodext-app-master-Base-method-addClusterHook'>    /**
+</span>     * @method addClusterHook
+     * @private
+     * Genera los hook para los eventos del process
+     */
+    addClusterHook: function () {
+        this.clusterLs = {
+            message: this.onClusterMessage.bind(this),
+            online: this.onClusterOnline.bind(this),
+            listening: this.onClusterListening.bind(this),
+            exit: this.onClusterExit.bind(this),
+            disconnect: this.onClusterDisconnect.bind(this),
+            fork: this.onClusterFork.bind(this)
+        };
+        Nodext.cluster.on(&quot;message&quot;, this.clusterLs.message);
+        Nodext.cluster.on(&quot;online&quot;, this.clusterLs.online);
+        Nodext.cluster.on(&quot;listening&quot;, this.clusterLs.listening);
+        Nodext.cluster.on(&#39;exit&#39;, this.clusterLs.exit);
+        Nodext.cluster.on(&#39;disconnect&#39;, this.clusterLs.disconnect);
+        Nodext.cluster.on(&#39;fork&#39;, this.clusterLs.fork);
+    },
+<span id='Nodext-app-master-Base-method-destroy'>    destroy: function () {
+</span>        if (this.clusterLs) {
+            for (var e in this.clusterLs) {
+                Nodext.cluster.removeListener(e, this.clusterLs[e]);
+            }
+        }
+    }
+    ///////////////
+    ///////////////
+    ///////////////
+    ///////////////
+    ///////////////    
+
+    // addListenerMonitor: function (Manager, items) {
+    //     this.SpaceMonitor = Nodext.SocketIOMgr.getByKey(&quot;Monitor&quot;);
+    //     if (!this.SpaceMonitor) {
+    //         return;
+    //     }
+    //     this.SpaceMonitor.relayEvents(this, [&#39;monitor&#39;], &quot;cluster&quot;)
+    // },
+
+    // getServers
+    // getWorkers: function (fn) {
+    //     var list = [];
+    //     this.clusters.each(function (cluster) {
+    //         list.push(cluster.encodeCluster());
+    //     });
+    //     fn(list);
+    // },
+    // resetWorker: function (data, socket) {
+    //     Nodext.logEvent(&quot;resetWorker&quot;)
+    //     var cluster = this.clusters.get(data.id_cluster);
+    //     if (!cluster) {
+    //         return { success: false, message: &quot;Cluster No Found&quot; };
+    //     }
+    //     var thread = cluster.get(data.id_thread);
+    //     if (!thread) {
+    //         return { success: false, message: &quot;Thread No Found&quot; };
+    //     }
+
+    //     thread.setStatus(&quot;resetingworker&quot;, {});
+    //     Nodext.logEvent(&quot;eliminando worker pid &quot; + thread.getPid());
+    //     var wSocket;
+    //     for (var p in this.netSocket) {
+    //         wSocket = this.netSocket[p];
+    //         if (wSocket.removeByKey(thread.equip + &quot;#&quot; + thread.getPid())) {
+    //             thread.setStatus(&quot;removefromnetserver&quot;, {});
+    //         }
+    //     }
+    //     this.addActionThread(thread, &quot;reset&quot;);
+    //     thread.send({
+    //         from: &#39;Nodext.Cluster&#39;,
+    //         event: &#39;resetworker&#39;,
+    //         params: []
+    //     });
+    // },
+    // addActionThread: function (worker, action) {
+    //     this.actionWorkers[worker.clusterId + worker.id] = action;
+    // },
+    // findActionWorker: function (worker) {
+    //     if (this.actionWorkers[worker.clusterId + worker.id]) {
+    //         return this.actionWorkers[worker.clusterId + worker.id];
+    //     } else {
+    //         return false;
+    //     }
+    // },
+    // removeActionWorker: function (worker) {
+    //     delete this.actionWorkers[worker.clusterId + worker.id];
+    // },
+    // emitAppServer: function (event, data) {
+    //     if (!Nodext.SocketIOMgr) {
+    //         Nodext.logError(&quot;No existe Nodext.SocketIOMgr&quot;);
+    //         return false;
+    //     }
+    //     Nodext.SocketIOMgr.emitSpace(&quot;Server&quot;, event, data);
+    // },
+    // startWorker: function (data, socket) {
+    //     Nodext.logEvent(&quot;startWorker&quot;);
+    //     var cluster = this.clusters.get(data.id_cluster);
+    //     if (!cluster) {
+    //         return { success: false, message: &quot;Cluster No Found&quot; };
+    //     }
+    //     var thread = cluster.get(data.id_thread);
+    //     if (!thread) {
+    //         return { success: false, message: &quot;Thread No Found&quot; };
+    //     }
+    //     if (!thread.worker) {
+    //         thread.generateWorker();
+    //         thread.worketInit();
+    //     }
+    // },
+    // stopWorker: function (data, socket) {
+    //     Nodext.logEvent(&quot;stopWorker&quot;);
+    //     var cluster = this.clusters.get(data.id_cluster);
+    //     if (!cluster) {
+    //         return { success: false, message: &quot;Cluster No Found&quot; };
+    //     }
+    //     var thread = cluster.get(data.id_thread);
+    //     if (!thread) {
+    //         return { success: false, message: &quot;Thread No Found&quot; };
+    //     }
+    //     thread.setStatus(&quot;stopingworker&quot;, {});
+    //     Nodext.logEvent(&quot;eliminando worker pid &quot; + thread.getPid());
+    //     var wSocket;
+    //     for (var p in this.netSocket) {
+    //         wSocket = this.netSocket[p];
+    //         if (wSocket.removeByKey(thread.equip + &quot;#&quot; + thread.getPid())) {
+    //             thread.setStatus(&quot;removefromnetserver&quot;, {});
+    //         }
+    //     }
+    //     this.addActionThread(thread, &quot;stop&quot;);
+    //     thread.send({
+    //         from: &#39;Nodext.Cluster&#39;,
+    //         event: &#39;stopworker&#39;,
+    //         params: []
+    //     });
+    // }
+});</pre>
+</body>
+</html>
