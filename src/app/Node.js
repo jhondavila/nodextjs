@@ -17,6 +17,7 @@ Nodext.define("Nodext.app.Node", {
     */
     Global: null,
     config: {
+        appProperty: 'app',
         /**
          * @cfg {String} appName
          * Nombre de la aplicacion
@@ -68,6 +69,10 @@ Nodext.define("Nodext.app.Node", {
         this.initConfig(cfg);
         this.mixins.observable.constructor.call(this, cfg);
         this.setConfig(this.fileCfg);
+
+
+        this.initNamespace();
+
         var Global = this.Global || {};
         Global.appNode = this;
         this.Global = Nodext.create("Nodext.app.GlobalConfig", Global);
@@ -76,6 +81,32 @@ Nodext.define("Nodext.app.Node", {
         Nodext.appActive.add(this);
         Nodext.db.Manager.loadCnx(this);
         this.initialize();
+    },
+    initNamespace: function () {
+        var me = this,
+            appProperty = me.getAppProperty(),
+            ns;
+
+        ns = Ext.namespace(me.getAppName());
+
+        if (ns) {
+            ns.getApplication = function () {
+                return me;
+            };
+
+            if (appProperty) {
+                if (!ns[appProperty]) {
+                    ns[appProperty] = me;
+                }
+                //<debug>
+                else if (ns[appProperty] !== me) {
+                    Ext.log.warn('An existing reference is being overwritten for ' + name + '.' + appProperty +
+                        '. See the appProperty config.'
+                    );
+                }
+                //</debug>
+            }
+        }
     },
     initialize: function () {
         if (Nodext.argv.test) {

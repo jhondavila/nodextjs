@@ -1,6 +1,6 @@
 {
   "name": "nodextjs",
-  "version": "2.0.14",
+  "version": "2.0.15",
   "description": "Nodext with Extjs",
   "main": "index.js",
   "dependencies": {
