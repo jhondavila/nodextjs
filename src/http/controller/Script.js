@@ -27,7 +27,7 @@ Nodext.define("Nodext.http.controller.Script", {
         or_not_group_start: 3,
         group_start: 3
     },
-    buildTreeApp: function (applications, parentId, nodeKey, parentKey) {
+    buildTreeApp: function (applications, parentId, nodeKey, parentKey, fn) {
         var app_tree = [];
         var ctrl = this;
         Ext.Array.each(applications, function (app) {
@@ -43,6 +43,9 @@ Nodext.define("Nodext.http.controller.Script", {
                     } else {
                         app["leaf"] = true;
                     }
+                }
+                if (fn) {
+                    fn(app, children, parentId);
                 }
                 Ext.Array.push(app_tree, app);
             }
@@ -92,11 +95,16 @@ Nodext.define("Nodext.http.controller.Script", {
         }
 
         if (params.id) {
-
-
             this.loopWh(inst, [{
                 property: "id",
                 value: params.id
+            }], options ? options.filters : {}, obj.where);
+        }
+
+        if (params.node) {
+            this.loopWh(inst, [{
+                property: "node",
+                value: params.node
             }], options ? options.filters : {}, obj.where);
         }
 
@@ -190,8 +198,16 @@ Nodext.define("Nodext.http.controller.Script", {
             filter = filters[x];
             if (Nodext.isObject(filter)) {
                 ignoreFilter = false;
-                if (options.validate || options.extraValidate) {
-                    fn = options.validate[filter.property] || options.extraValidate[filter.property];
+                if (options.validate) {
+                    // debugger
+                    fn = options.validate[filter.property];
+                    if (Nodext.isFunction(fn)) {
+                        if (fn(filter, filters) === false) {
+                            ignoreFilter = true;
+                        }
+                    }
+                } else if (options.extraValidate) {
+                    fn = options.extraValidate[filter.property];
                     if (Nodext.isFunction(fn)) {
                         if (fn(filter, filters) === false) {
                             ignoreFilter = true;
@@ -200,9 +216,13 @@ Nodext.define("Nodext.http.controller.Script", {
                 }
                 field = filter.property;
                 value = filter.hasOwnProperty("value") ? filter.value : null;
-                if (typeof filter.exactMatch === "boolean" && filter.exactMatch === true) {
+                // debugger
+                if (filter.exactMatch === true && value !== null) {
                     filter.exactMatch = "=";
+                } else {
+                    filter.exactMatch = null;
                 }
+
                 operator = filter.operator || filter.exactMatch || null;
                 type = filter.type || 'where';
 
