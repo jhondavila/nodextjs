@@ -116,7 +116,7 @@
             "/overrides/Override.js",
             "/src/JSON.js",
             "/src/NodextPath.js",
-            "/src/database/Manager.js",
+            "/src/database/QBManager.js",
             "/src/NodextReady.js"
         ]
     }

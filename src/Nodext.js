@@ -78,17 +78,37 @@
          * Crea una nueva aplicacion, por defecto es una instancia de {@link Nodext.app.Node}
          * @param {Object} app
          */
-        application: function (app) {
+        application: function (config) {
             var ready = function () {
-                var obj = Nodext.currentLaunch;
-                if (obj) {
-                    app.fileCfg = obj.appLoadCfg;
-                    app.fileCfg.path = app.path || obj.appLoadCfg.path;
-                    app.pathBase = app.pathBase || obj.pathBase;
+                // var obj = Nodext.currentLaunch;
+                // if (obj) {
+                //     config.fileCfg = obj.appLoadCfg;
+                //     config.fileCfg.path = config.path || obj.appLoadCfg.path;
+                //     config.pathBase = config.pathBase || obj.pathBase;
+                // }
+                // Nodext.currentLaunch = null;
+
+                config = Ext.apply({
+                    extend: 'Nodext.app.Node'
+                }, config);
+                console.log(config)
+
+
+                // Ext.app.setupPaths(config.name, config.appFolder, config.paths);
+
+                // Ext.Loader.setPath
+
+                // Ext.Loader.setPath(ns, paths[ns]);
+
+                // Ext.Loader.setPath(config.name, (appFolder === undefined) ? 'app' : appFolder);
+                for (var p in config.paths) {
+                    Ext.Loader.setPath(p, config.paths[p]);
                 }
-                Nodext.currentLaunch = null;
-                var extend = app.extend || "Nodext.app.Node";
-                return Ext.create(extend, app);
+
+                Ext.define(config.name + ".$application", config,
+                    function () {
+                        new this();
+                    });
             };
             Nodext.onReady(ready);
         },

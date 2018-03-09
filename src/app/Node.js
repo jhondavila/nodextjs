@@ -7,7 +7,7 @@ Nodext.define("Nodext.app.Node", {
         observable: 'Ext.util.Observable'
     },
     requires: [
-        "Nodext.console.Color"
+        "Nodext.console.Color",
     ],
     $configPrefixed: false,
     $configStrict: false,
@@ -22,12 +22,8 @@ Nodext.define("Nodext.app.Node", {
          * @cfg {String} appName
          * Nombre de la aplicacion
          */
-        appName: null,
-        /**
-         * @cfg {String} path
-         * Ruta de la aplicacion
-         */
-        path: null,
+        name: null,
+
         /**
          * @cfg {String} version
          * Version de la aplicacion
@@ -52,17 +48,19 @@ Nodext.define("Nodext.app.Node", {
          */
         idCluster: null,
         /**
-         * @cfg {String} pathBase
-         * ruta base de la aplicacion
+         * @cfg {String} path
+         * Ruta de la aplicacion
          */
-        pathBase: null
+        path: null,
     },
 
-    setPath: function (path) {
-        path = this.pathBase + "/" + path;
-        this.path = path;
-        Nodext.Loader.setPath(this.appName, path);
-    },
+    // setPath: function (path) {
+    //     // path = this.pathBase + "/" + path;
+    //     // this.path = path;
+    //     // Nodext.Loader.setPath(this.appName, path);
+
+
+    // },
     constructor: function (cfg) {
         cfg = cfg || {};
         Nodext.apply(this, cfg);
@@ -70,7 +68,8 @@ Nodext.define("Nodext.app.Node", {
         this.mixins.observable.constructor.call(this, cfg);
         this.setConfig(this.fileCfg);
 
-
+        this.path = Ext.Loader.getPath(this.name);
+        
         this.initNamespace();
 
         var Global = this.Global || {};
@@ -87,7 +86,7 @@ Nodext.define("Nodext.app.Node", {
             appProperty = me.getAppProperty(),
             ns;
 
-        ns = Ext.namespace(me.getAppName());
+        ns = Ext.namespace(me.getName());
 
         if (ns) {
             ns.getApplication = function () {

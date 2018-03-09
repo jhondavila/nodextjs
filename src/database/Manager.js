@@ -3,9 +3,16 @@
  */
 Nodext.define("Nodext.database.Manager", {
     extend: 'Ext.Base',
-    uses: [
-        // "Nodext.database.*"
+    requires: [
+        // "Nodext.database.action.*",
+        // "Nodext.database.postgre.*",
+        // "Nodext.database.mysql.*",
+        // "Nodext.database.query.*"
+    ],
+    uses : [
         "Nodext.database.*"
+    //     // "Nodext.database.*"
+    //     "Nodext.database.QBManager"
     ],
     alternateClassName: ["Nodext.db.Manager", "Nodext.db.Mgr"],
     $configPrefixed: false,
@@ -96,7 +103,9 @@ Nodext.define("Nodext.database.Manager", {
                 Ext.apply(newConfig, {
                     nameConnection: nameConnection
                 });
-                Nodext.database.Connection.create(newConfig);
+                if(newConfig.dbdriver){
+                    Nodext.database.Connection.create(newConfig);
+                }
             }
         });
     },

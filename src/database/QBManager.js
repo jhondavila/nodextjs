@@ -3,7 +3,7 @@
  */
 Nodext.define("Nodext.database.QBManager", {
     extend: "Ext.Base",
-    // requires: ["Nodext.database.Manager"],
+    requires: ["Nodext.database.Manager"],
     $configPrefixed: false,
     singleton: true,
     constructor: function (config) {
@@ -11,7 +11,6 @@ Nodext.define("Nodext.database.QBManager", {
         this.initConfig(config);
     },
     // getQB: Nodext.emptyFn,
-    getQB: Nodext.db.Mgr.getQBInst.bind(Nodext.db.Mgr),
     query: function (inst, query, fn, run) {
         var qb = this.getQB(inst);
         if (!qb) {
@@ -137,4 +136,6 @@ Nodext.define("Nodext.database.QBManager", {
         qb.initQuery(inst, config);
         results = params = null;
     },
+}, function () {
+    this.getQB = Nodext.db.Mgr.getQBInst.bind(Nodext.db.Mgr);
 });

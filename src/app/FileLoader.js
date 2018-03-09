@@ -90,11 +90,10 @@ Nodext.define("Nodext.app.FileLoader", {
             if (!this.basePath) {
                 this.basePath = this.appNode.getPath();
             }
-            appName = this.appNode.appName;
+            appName = this.appNode.name;
         }
         var fullPath = this.basePath + "/" + this.loaderPath;
         this.RegExPattern = eval("/(" + (this.ignoreFilesWith ? this.ignoreFilesWith.join("|") : [].join("|")) + ")/gi");
-
 
 
         // console.log(files);
