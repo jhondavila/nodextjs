@@ -119,6 +119,31 @@
             }
 
             return ret;
+        },
+        deleteFiles: function (path) {
+            this.fs = this.fs || require("fs");
+            this.path = this.path || require("path");
+            if (this.fs.existsSync(path)) {
+                if (this.fs.lstatSync(path).isDirectory()) {
+                    this.fs.readdirSync(path).forEach(function (file, index) {
+                        var curPath = this.path.join(path, file);
+                        // console.log(curPath);
+                        if (this.fs.lstatSync(curPath).isDirectory()) { // recurse
+
+                            this.deleteFiles(curPath);
+                        } else { // delete file
+                            this.fs.unlinkSync(curPath);
+                        }
+                    }, this);
+                    this.fs.rmdirSync(path);
+                } else {
+                    this.fs.unlinkSync(path);
+                }
+            }
+        },
+        cmd: function (cmd, callback) {
+            this._exec = this._exec || require('child_process').exec;
+            this._exec(cmd, callback);
         }
     });
 }())

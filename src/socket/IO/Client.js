@@ -91,7 +91,9 @@ Nodext.define("Nodext.socket.IO.Client", {
                 e.splice(1, 0, this._extSocket);
                 this._extSocket.fireEvent.apply(this._extSocket, e);
                 e.splice(0, e.length);
-                console.log("ms : " + (new Date() - date));
+                if (this._extSocket.debug) {
+                    console.log("ms : " + (new Date() - date));
+                }
             }
         } else {
             this.receiveBuffer.push(e)

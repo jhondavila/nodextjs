@@ -367,7 +367,9 @@ Nodext.define("Nodext.socket.IO.SocketIO", {
                         event.splice(1, 1);
                         self.__proto__.__proto__.emit.apply(self, event);
                         event.splice(0, event.length);
-                        console.log("ms : " + (new Date() - date))
+                        if (self._space.debug) {
+                            console.log("ms : " + (new Date() - date))
+                        }
                         // console.log(inst);
                         // debugger
                         if (!inst.destroyed && inst.autoClear && inst.DBCompiles.length === 0) {

@@ -119,16 +119,28 @@ Nodext.define("Nodext.socket.IO.Socket", {
         var args = Array.prototype.slice.call(arguments, 2);
         socket.emit.apply(socket, args);
     },
-    emitBasicIdList: function (sktInst, array) {
+    emitBasicIdList: function (sktInst, array, nsp) {
         if (sktInst.destroyed) {
             return;
         }
-        var socket = sktInst.socket;
-        for (var x = 0; x < array.length; x++) {
-            socket._rooms.push(this.nsp.name + "#" + array[x]);
+        var emitter;
+        if (nsp) {
+            emitter = this.io.of(nsp);
+        } else {
+            emitter = sktInst.socket;
         }
-        var args = Array.prototype.slice.call(arguments, 2);
-        socket.emit.apply(socket, args);
+        if (!emitter) {
+            Nodext.logError("No se logro resolver el emisor en los parametros");
+        }
+        for (var x = 0; x < array.length; x++) {
+            if (emitter._rooms) {
+                emitter._rooms.push((nsp ? nsp : emitter.name) + "#" + array[x]);
+            } else {
+                emitter.rooms.push((nsp ? nsp : emitter.name) + "#" + array[x]);
+            }
+        }
+        var args = Array.prototype.slice.call(arguments, nsp ? 3 : 2);
+        emitter.emit.apply(emitter, args);
     }
     ///////////////////////
     ///////////////////////
