@@ -32,7 +32,7 @@ Nodext.define("Nodext.http.controller.Script", {
         var ctrl = this;
         Ext.Array.each(applications, function (app) {
             if (app[parentKey] === parentId) {
-                var children = ctrl.buildTreeApp(applications, app[nodeKey], nodeKey, parentKey);
+                var children = ctrl.buildTreeApp(applications, app[nodeKey], nodeKey, parentKey, fn);
                 if (children.length > 0) {
                     app["children"] = children;
                 }
